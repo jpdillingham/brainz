@@ -84,7 +84,7 @@ namespace Brainz.Release
         public string Packaging { get; set; }
 
         [JsonProperty("status-id")]
-        public Guid StatusId { get; set; }
+        public string StatusId { get; set; }
     }
 
     public partial class ReleaseEvent

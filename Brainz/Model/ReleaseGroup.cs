@@ -87,11 +87,10 @@ namespace Brainz.ReleaseGroup
     public partial class LifeSpan
     {
         [JsonProperty("begin")]
-        [JsonConverter(typeof(ParseStringConverter))]
-        public long Begin { get; set; }
+        public string Begin { get; set; }
 
         [JsonProperty("end")]
-        public object End { get; set; }
+        public string End { get; set; }
 
         [JsonProperty("ended")]
         public bool Ended { get; set; }
@@ -127,135 +126,4 @@ namespace Brainz.ReleaseGroup
     public enum PrimaryType { Album };
 
     public enum SecondaryType { Compilation, Live };
-
-    public partial class ReleaseGroupResponse
-    {
-        public static ReleaseGroupResponse FromJson(string json) => JsonConvert.DeserializeObject<ReleaseGroupResponse>(json, Brainz.ReleaseGroup.Converter.Settings);
-    }
-
-    public static class Serialize
-    {
-        public static string ToJson(this ReleaseGroupResponse self) => JsonConvert.SerializeObject(self, Brainz.ReleaseGroup.Converter.Settings);
-    }
-
-    internal static class Converter
-    {
-        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
-        {
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-            DateParseHandling = DateParseHandling.None,
-            Converters =
-            {
-                PrimaryTypeConverter.Singleton,
-                SecondaryTypeConverter.Singleton,
-                new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }
-            },
-        };
-    }
-
-    internal class ParseStringConverter : JsonConverter
-    {
-        public override bool CanConvert(Type t) => t == typeof(long) || t == typeof(long?);
-
-        public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.Null) return null;
-            var value = serializer.Deserialize<string>(reader);
-            long l;
-            if (Int64.TryParse(value, out l))
-            {
-                return l;
-            }
-            throw new Exception("Cannot unmarshal type long");
-        }
-
-        public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-        {
-            if (untypedValue == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-            var value = (long)untypedValue;
-            serializer.Serialize(writer, value.ToString());
-            return;
-        }
-
-        public static readonly ParseStringConverter Singleton = new ParseStringConverter();
-    }
-
-    internal class PrimaryTypeConverter : JsonConverter
-    {
-        public override bool CanConvert(Type t) => t == typeof(PrimaryType) || t == typeof(PrimaryType?);
-
-        public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.Null) return null;
-            var value = serializer.Deserialize<string>(reader);
-            if (value == "Album")
-            {
-                return PrimaryType.Album;
-            }
-            throw new Exception("Cannot unmarshal type PrimaryType");
-        }
-
-        public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-        {
-            if (untypedValue == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-            var value = (PrimaryType)untypedValue;
-            if (value == PrimaryType.Album)
-            {
-                serializer.Serialize(writer, "Album");
-                return;
-            }
-            throw new Exception("Cannot marshal type PrimaryType");
-        }
-
-        public static readonly PrimaryTypeConverter Singleton = new PrimaryTypeConverter();
-    }
-
-    internal class SecondaryTypeConverter : JsonConverter
-    {
-        public override bool CanConvert(Type t) => t == typeof(SecondaryType) || t == typeof(SecondaryType?);
-
-        public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.Null) return null;
-            var value = serializer.Deserialize<string>(reader);
-            switch (value)
-            {
-                case "Compilation":
-                    return SecondaryType.Compilation;
-                case "Live":
-                    return SecondaryType.Live;
-            }
-            throw new Exception("Cannot unmarshal type SecondaryType");
-        }
-
-        public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-        {
-            if (untypedValue == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-            var value = (SecondaryType)untypedValue;
-            switch (value)
-            {
-                case SecondaryType.Compilation:
-                    serializer.Serialize(writer, "Compilation");
-                    return;
-                case SecondaryType.Live:
-                    serializer.Serialize(writer, "Live");
-                    return;
-            }
-            throw new Exception("Cannot marshal type SecondaryType");
-        }
-
-        public static readonly SecondaryTypeConverter Singleton = new SecondaryTypeConverter();
-    }
 }

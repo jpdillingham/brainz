@@ -14,10 +14,10 @@ namespace Brainz
     class Program
     {
         [Argument('a', "artist", "The name of the artist to search for.")]
-        private static string Artist { get; set; } = "wu-tang clan";
+        private static string Artist { get; set; } = "metallica";
 
         [Argument('r', "release", "The name of the release (album) to search for.")]
-        private static string Album { get; set; } = "wu-tang forever";
+        private static string Album { get; set; } = "...and justice for all";
 
         private static HttpClient Http { get; } = new HttpClient();
 
@@ -29,6 +29,7 @@ namespace Brainz
 
         static void Main(string[] args)
         {
+            //Arguments.Populate();
             Http.DefaultRequestHeaders.UserAgent.ParseAdd("Brainz/1.00 ( https://github.com/jpdillingham/Brainz )");
             Task.Run(() => MainAsync(args)).ConfigureAwait(false).GetAwaiter().GetResult();
 
