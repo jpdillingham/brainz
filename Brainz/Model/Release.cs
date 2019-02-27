@@ -17,119 +17,125 @@ namespace Brainz.Release
 
     public partial class ReleaseResponse
     {
-        [JsonProperty("disambiguation")]
-        public string Disambiguation { get; set; }
+        [JsonProperty("release-offset")]
+        public long ReleaseOffset { get; set; }
 
         [JsonProperty("releases")]
         public Release[] Releases { get; set; }
 
-        [JsonProperty("first-release-date")]
-        public string FirstReleaseDate { get; set; }
-
-        [JsonProperty("primary-type-id")]
-        public Guid PrimaryTypeId { get; set; }
-
-        [JsonProperty("secondary-type-ids")]
-        public object[] SecondaryTypeIds { get; set; }
-
-        [JsonProperty("title")]
-        public string Title { get; set; }
-
-        [JsonProperty("secondary-types")]
-        public object[] SecondaryTypes { get; set; }
-
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
-
-        [JsonProperty("primary-type")]
-        public string PrimaryType { get; set; }
+        [JsonProperty("release-count")]
+        public long ReleaseCount { get; set; }
     }
 
     public partial class Release
     {
-        [JsonProperty("title")]
-        public string Title { get; set; }
-
-        [JsonProperty("quality")]
-        public string Quality { get; set; }
-
-        [JsonProperty("status")]
-        public string Status { get; set; }
-
-        [JsonProperty("date")]
-        public string Date { get; set; }
-
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
-
-        [JsonProperty("release-events")]
-        public ReleaseEvent[] ReleaseEvents { get; set; }
-
-        [JsonProperty("barcode")]
-        public string Barcode { get; set; }
-
         [JsonProperty("packaging-id")]
-        public string PackagingId { get; set; }
+        public Guid? PackagingId { get; set; }
+
+        [JsonProperty("asin")]
+        public string Asin { get; set; }
+
+        [JsonProperty("status-id")]
+        public Guid StatusId { get; set; }
 
         [JsonProperty("disambiguation")]
         public string Disambiguation { get; set; }
 
-        [JsonProperty("text-representation")]
-        public TextRepresentation TextRepresentation { get; set; }
-
-        [JsonProperty("country")]
-        public string Country { get; set; }
+        [JsonProperty("date")]
+        public string Date { get; set; }
 
         [JsonProperty("packaging")]
         public string Packaging { get; set; }
 
-        [JsonProperty("status-id")]
-        public string StatusId { get; set; }
-        
+        [JsonProperty("status")]
+        public string Status { get; set; }
+
+        [JsonProperty("release-events")]
+        public ReleaseEvent[] ReleaseEvents { get; set; }
+
+        [JsonProperty("cover-art-archive")]
+        public CoverArtArchive CoverArtArchive { get; set; }
+
+        [JsonProperty("text-representation")]
+        public TextRepresentation TextRepresentation { get; set; }
+
+        [JsonProperty("quality")]
+        public string Quality { get; set; }
+
+        [JsonProperty("title")]
+        public string Title { get; set; }
+
+        [JsonProperty("country")]
+        public string Country { get; set; }
+
+        [JsonProperty("id")]
+        public Guid Id { get; set; }
+
         [JsonProperty("media")]
         public Media[] Media { get; set; }
+
+        [JsonProperty("barcode")]
+        public string Barcode { get; set; }
+    }
+
+    public partial class CoverArtArchive
+    {
+        [JsonProperty("artwork")]
+        public bool Artwork { get; set; }
+
+        [JsonProperty("front")]
+        public bool Front { get; set; }
+
+        [JsonProperty("count")]
+        public long Count { get; set; }
+
+        [JsonProperty("back")]
+        public bool Back { get; set; }
+
+        [JsonProperty("darkened")]
+        public bool Darkened { get; set; }
     }
 
     public partial class Media
     {
-        [JsonProperty("format")]
-        public string Format { get; set; }
-
         [JsonProperty("format-id")]
         public Guid FormatId { get; set; }
-
-        [JsonProperty("position")]
-        public long Position { get; set; }
 
         [JsonProperty("track-count")]
         public long TrackCount { get; set; }
 
         [JsonProperty("title")]
         public string Title { get; set; }
+
+        [JsonProperty("position")]
+        public long Position { get; set; }
+
+        [JsonProperty("format")]
+        public string Format { get; set; }
     }
 
     public partial class ReleaseEvent
     {
-        [JsonProperty("area")]
-        public Area Area { get; set; }
-
         [JsonProperty("date")]
         public string Date { get; set; }
+
+        [JsonProperty("area")]
+        public Area Area { get; set; }
     }
 
     public partial class Area
     {
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
         [JsonProperty("sort-name")]
         public string SortName { get; set; }
 
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
         [JsonProperty("iso-3166-1-codes")]
         public string[] Iso31661Codes { get; set; }
+
+        [JsonProperty("id")]
+        public Guid Id { get; set; }
 
         [JsonProperty("disambiguation")]
         public string Disambiguation { get; set; }

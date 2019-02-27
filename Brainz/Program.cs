@@ -8,6 +8,7 @@ using Brainz.Artist;
 using Brainz.ReleaseGroup;
 using Brainz.Release;
 using Brainz.Recording;
+using System.Collections.Generic;
 
 namespace Brainz
 {
@@ -27,7 +28,11 @@ namespace Brainz
         private static Func<string, string> ArtistRequest => (artist) => $"{ApiRoot}/artist/?query={artist}&fmt=json";
         //private static Func<Guid, string> ReleaseGroupRequest => (mbid) => $"{ApiRoot}/artist/{mbid}?inc=release-groups&fmt=json";
         private static Func<Guid, int, int, string> ReleaseGroupRequest => (mbid, offset, limit) => $"{ApiRoot}/release-group?artist={mbid}&offset={offset}&limit={limit}&fmt=json";
-        private static Func<Guid, string> ReleaseRequest => (mbid) => $"{ApiRoot}/release-group/{mbid}?inc=releases+media&fmt=json";
+
+
+        //private static Func<Guid, string> ReleaseRequest => (mbid) => $"{ApiRoot}/release-group/{mbid}?inc=releases+media&fmt=json";
+        //https://musicbrainz.org/ws/2/release?release-group=04066384-affd-32ce-9b6f-ac4a97c07671&offset=0&limit=25&fmt=json&inc=media
+        private static Func<Guid, int, int, string> ReleaseRequest => (mbid, offset, limit) => $"{ApiRoot}/release?release-group={mbid}&offset={offset}&limit={limit}&inc=media&fmt=json";
         private static Func<Guid, string> RecordingRequest => (mbid) => $"{ApiRoot}/release/{mbid}?inc=recordings&fmt=json";
 
         static int Main(string[] args)
@@ -59,15 +64,23 @@ namespace Brainz
             Console.WriteLine();
             Console.WriteLine($"Best artist match: {bestArtist.Name} (score: {bestArtist.Score}%)");
 
-            req = ReleaseGroupRequest(bestArtist.Id, 0, 100);
-            Console.WriteLine(req);
             Console.WriteLine();
             Console.WriteLine($"Fetching release group matches for artist '{bestArtist.Name}', album '{Album}'...");
             Console.WriteLine();
 
-            var releaseGroupJson = await Http.GetStringAsync(req).ConfigureAwait(false);
-            var releaseGroupResponse = JsonConvert.DeserializeObject<ReleaseGroupResponse>(releaseGroupJson);
-            var releaseGroups = releaseGroupResponse.ReleaseGroups.OrderByDescending(r => r.Title.SimilarityCaseInsensitive(Album));
+            List<ReleaseGroup.ReleaseGroup> releaseGroups = new List<ReleaseGroup.ReleaseGroup>();
+            ReleaseGroupResponse releaseGroupResponse = null;
+
+            do
+            {
+                req = ReleaseGroupRequest(bestArtist.Id, releaseGroups.Count, 100);
+                var releaseGroupJson = await Http.GetStringAsync(req).ConfigureAwait(false);
+                releaseGroupResponse = JsonConvert.DeserializeObject<ReleaseGroupResponse>(releaseGroupJson);
+
+                releaseGroups.AddRange(releaseGroupResponse.ReleaseGroups);
+            } while (releaseGroups.Count < releaseGroupResponse.ReleaseGroupCount);
+
+            releaseGroups = releaseGroups.OrderByDescending(r => r.Title.SimilarityCaseInsensitive(Album)).ToList();
 
             var bestReleaseGroup = releaseGroups.FirstOrDefault();
 
@@ -79,17 +92,25 @@ namespace Brainz
             Console.WriteLine();
             Console.WriteLine($"Best release group match: {bestReleaseGroup.Title} (score: {(bestReleaseGroup.Title.SimilarityCaseInsensitive(Album) * 100).ToString("F0")}%)");
 
-            req = ReleaseRequest(bestReleaseGroup.Id);
-            Console.WriteLine(req);
+
+            //Console.WriteLine(req);
             Console.WriteLine();
             Console.WriteLine($"Fetching releases for release group '{bestReleaseGroup.Title}'...");
             Console.WriteLine();
 
-            var releasesJson = await Http.GetStringAsync(req).ConfigureAwait(false);
-            var releasesResponse = JsonConvert.DeserializeObject<ReleaseResponse>(releasesJson);
-            var releases = releasesResponse.Releases.OrderBy(r => r.Date.ToFuzzyDateTime());
+            List<Release.Release> releases = new List<Release.Release>();
+            ReleaseResponse releasesResponse = null;
 
-            //Console.WriteLine(releasesJson);
+            do
+            {
+                req = ReleaseRequest(bestReleaseGroup.Id, 0, 100);
+                var releasesJson = await Http.GetStringAsync(req).ConfigureAwait(false);
+                releasesResponse = JsonConvert.DeserializeObject<ReleaseResponse>(releasesJson);
+
+                releases.AddRange(releasesResponse.Releases);
+            } while (releases.Count < releasesResponse.ReleaseCount);
+            
+            releases = releases.OrderBy(r => r.Date.ToFuzzyDateTime()).ToList();
 
             var bestRelease = releases
                 .Where(r => r.Status == "Official")

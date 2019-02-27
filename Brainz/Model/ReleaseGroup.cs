@@ -17,111 +17,43 @@ namespace Brainz.ReleaseGroup
 
     public partial class ReleaseGroupResponse
     {
-        [JsonProperty("sort-name")]
-        public string SortName { get; set; }
-
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
-
-        [JsonProperty("type")]
-        public string Type { get; set; }
-
-        [JsonProperty("end_area")]
-        public object EndArea { get; set; }
-
-        [JsonProperty("life-span")]
-        public LifeSpan LifeSpan { get; set; }
-
-        [JsonProperty("country")]
-        public string Country { get; set; }
-
-        [JsonProperty("type-id")]
-        public Guid TypeId { get; set; }
-
-        [JsonProperty("gender-id")]
-        public object GenderId { get; set; }
-
-        [JsonProperty("ipis")]
-        public object[] Ipis { get; set; }
-
-        [JsonProperty("disambiguation")]
-        public string Disambiguation { get; set; }
-
-        [JsonProperty("begin_area")]
-        public Area BeginArea { get; set; }
-
         [JsonProperty("release-groups")]
         public ReleaseGroup[] ReleaseGroups { get; set; }
 
-        [JsonProperty("gender")]
-        public object Gender { get; set; }
+        [JsonProperty("release-group-count")]
+        public long ReleaseGroupCount { get; set; }
 
-        [JsonProperty("isnis")]
-        public object[] Isnis { get; set; }
-
-        [JsonProperty("area")]
-        public Area Area { get; set; }
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-    }
-
-    public partial class Area
-    {
-        [JsonProperty("iso-3166-1-codes", NullValueHandling = NullValueHandling.Ignore)]
-        public string[] Iso31661Codes { get; set; }
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        [JsonProperty("disambiguation")]
-        public string Disambiguation { get; set; }
-
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
-
-        [JsonProperty("sort-name")]
-        public string SortName { get; set; }
-    }
-
-    public partial class LifeSpan
-    {
-        [JsonProperty("begin")]
-        public string Begin { get; set; }
-
-        [JsonProperty("end")]
-        public string End { get; set; }
-
-        [JsonProperty("ended")]
-        public bool Ended { get; set; }
+        [JsonProperty("release-group-offset")]
+        public long ReleaseGroupOffset { get; set; }
     }
 
     public partial class ReleaseGroup
     {
-        [JsonProperty("secondary-types")]
-        public SecondaryType[] SecondaryTypes { get; set; }
-
-        [JsonProperty("id")]
-        public Guid Id { get; set; }
-
-        [JsonProperty("primary-type-id")]
-        public Guid PrimaryTypeId { get; set; }
+        [JsonProperty("secondary-type-ids")]
+        public Guid[] SecondaryTypeIds { get; set; }
 
         [JsonProperty("disambiguation")]
         public string Disambiguation { get; set; }
 
-        [JsonProperty("title")]
-        public string Title { get; set; }
+        [JsonProperty("first-release-date")]
+        public string FirstReleaseDate { get; set; }
+
+        [JsonProperty("primary-type-id")]
+        public Guid PrimaryTypeId { get; set; }
 
         [JsonProperty("primary-type")]
         public PrimaryType PrimaryType { get; set; }
 
-        [JsonProperty("secondary-type-ids")]
-        public Guid[] SecondaryTypeIds { get; set; }
+        [JsonProperty("id")]
+        public Guid Id { get; set; }
 
-        [JsonProperty("first-release-date")]
-        public string FirstReleaseDate { get; set; }
+        [JsonProperty("title")]
+        public string Title { get; set; }
+
+        [JsonProperty("secondary-types")]
+        public SecondaryType[] SecondaryTypes { get; set; }
     }
+
     // from the docs: nat, album, single, ep, compilation, soundtrack, spokenword, interview, audiobook, live, remix, other
     public enum PrimaryType { NAT, Album, Single, EP };
 
