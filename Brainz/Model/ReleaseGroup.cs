@@ -122,8 +122,8 @@ namespace Brainz.ReleaseGroup
         [JsonProperty("first-release-date")]
         public string FirstReleaseDate { get; set; }
     }
+    // from the docs: nat, album, single, ep, compilation, soundtrack, spokenword, interview, audiobook, live, remix, other
+    public enum PrimaryType { NAT, Album, Single, EP };
 
-    public enum PrimaryType { Album };
-
-    public enum SecondaryType { Compilation, Live, Demo };
+    public enum SecondaryType { Demo, Compilation, Soundtrack, SpokenWord, Interview, AudioBook, Live, Remix, Other };
 }

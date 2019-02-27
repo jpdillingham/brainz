@@ -25,7 +25,8 @@ namespace Brainz
         private static string ApiRoot = @"https://musicbrainz.org/ws/2";
 
         private static Func<string, string> ArtistRequest => (artist) => $"{ApiRoot}/artist/?query={artist}&fmt=json";
-        private static Func<Guid, string> ReleaseGroupRequest => (mbid) => $"{ApiRoot}/artist/{mbid}?inc=release-groups&fmt=json";
+        //private static Func<Guid, string> ReleaseGroupRequest => (mbid) => $"{ApiRoot}/artist/{mbid}?inc=release-groups&fmt=json";
+        private static Func<Guid, int, int, string> ReleaseGroupRequest => (mbid, offset, limit) => $"{ApiRoot}/release-group?artist={mbid}&offset={offset}&limit={limit}&fmt=json";
         private static Func<Guid, string> ReleaseRequest => (mbid) => $"{ApiRoot}/release-group/{mbid}?inc=releases+media&fmt=json";
         private static Func<Guid, string> RecordingRequest => (mbid) => $"{ApiRoot}/release/{mbid}?inc=recordings&fmt=json";
 
@@ -58,12 +59,13 @@ namespace Brainz
             Console.WriteLine();
             Console.WriteLine($"Best artist match: {bestArtist.Name} (score: {bestArtist.Score}%)");
 
-            req = ReleaseGroupRequest(bestArtist.Id);
+            req = ReleaseGroupRequest(bestArtist.Id, 0, 100);
+            Console.WriteLine(req);
             Console.WriteLine();
             Console.WriteLine($"Fetching release group matches for artist '{bestArtist.Name}', album '{Album}'...");
             Console.WriteLine();
 
-            var releaseGroupJson = await Http.GetStringAsync(ReleaseGroupRequest(bestArtist.Id)).ConfigureAwait(false);
+            var releaseGroupJson = await Http.GetStringAsync(req).ConfigureAwait(false);
             var releaseGroupResponse = JsonConvert.DeserializeObject<ReleaseGroupResponse>(releaseGroupJson);
             var releaseGroups = releaseGroupResponse.ReleaseGroups.OrderByDescending(r => r.Title.SimilarityCaseInsensitive(Album));
 
@@ -78,6 +80,7 @@ namespace Brainz
             Console.WriteLine($"Best release group match: {bestReleaseGroup.Title} (score: {(bestReleaseGroup.Title.SimilarityCaseInsensitive(Album) * 100).ToString("F0")}%)");
 
             req = ReleaseRequest(bestReleaseGroup.Id);
+            Console.WriteLine(req);
             Console.WriteLine();
             Console.WriteLine($"Fetching releases for release group '{bestReleaseGroup.Title}'...");
             Console.WriteLine();
