@@ -85,6 +85,27 @@ namespace Brainz.Release
 
         [JsonProperty("status-id")]
         public string StatusId { get; set; }
+        
+        [JsonProperty("media")]
+        public Media[] Media { get; set; }
+    }
+
+    public partial class Media
+    {
+        [JsonProperty("format")]
+        public string Format { get; set; }
+
+        [JsonProperty("format-id")]
+        public Guid FormatId { get; set; }
+
+        [JsonProperty("position")]
+        public long Position { get; set; }
+
+        [JsonProperty("track-count")]
+        public long TrackCount { get; set; }
+
+        [JsonProperty("title")]
+        public string Title { get; set; }
     }
 
     public partial class ReleaseEvent
