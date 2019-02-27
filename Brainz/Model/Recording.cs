@@ -42,7 +42,7 @@ namespace Brainz.Recording
         public ReleaseEvent[] ReleaseEvents { get; set; }
 
         [JsonProperty("date")]
-        public DateTimeOffset Date { get; set; }
+        public string Date { get; set; }
 
         [JsonProperty("cover-art-archive")]
         public CoverArtArchive CoverArtArchive { get; set; }
@@ -123,8 +123,7 @@ namespace Brainz.Recording
         public string Title { get; set; }
 
         [JsonProperty("number")]
-        [JsonConverter(typeof(ParseStringConverter))]
-        public long Number { get; set; }
+        public string Number { get; set; }
 
         [JsonProperty("recording")]
         public Recording Recording { get; set; }
@@ -151,7 +150,7 @@ namespace Brainz.Recording
     public partial class ReleaseEvent
     {
         [JsonProperty("date")]
-        public DateTimeOffset Date { get; set; }
+        public string Date { get; set; }
 
         [JsonProperty("area")]
         public Area Area { get; set; }
@@ -185,100 +184,4 @@ namespace Brainz.Recording
     }
 
     public enum Disambiguation { Empty, Explicit };
-
-    public partial class RecordingResponse
-    {
-        public static RecordingResponse FromJson(string json) => JsonConvert.DeserializeObject<RecordingResponse>(json, Brainz.Recording.Converter.Settings);
-    }
-
-    public static class Serialize
-    {
-        public static string ToJson(this RecordingResponse self) => JsonConvert.SerializeObject(self, Brainz.Recording.Converter.Settings);
-    }
-
-    internal static class Converter
-    {
-        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
-        {
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-            DateParseHandling = DateParseHandling.None,
-            Converters =
-            {
-                DisambiguationConverter.Singleton,
-                new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal }
-            },
-        };
-    }
-
-    internal class ParseStringConverter : JsonConverter
-    {
-        public override bool CanConvert(Type t) => t == typeof(long) || t == typeof(long?);
-
-        public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.Null) return null;
-            var value = serializer.Deserialize<string>(reader);
-            long l;
-            if (Int64.TryParse(value, out l))
-            {
-                return l;
-            }
-            throw new Exception("Cannot unmarshal type long");
-        }
-
-        public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-        {
-            if (untypedValue == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-            var value = (long)untypedValue;
-            serializer.Serialize(writer, value.ToString());
-            return;
-        }
-
-        public static readonly ParseStringConverter Singleton = new ParseStringConverter();
-    }
-
-    internal class DisambiguationConverter : JsonConverter
-    {
-        public override bool CanConvert(Type t) => t == typeof(Disambiguation) || t == typeof(Disambiguation?);
-
-        public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.Null) return null;
-            var value = serializer.Deserialize<string>(reader);
-            switch (value)
-            {
-                case "":
-                    return Disambiguation.Empty;
-                case "explicit":
-                    return Disambiguation.Explicit;
-            }
-            throw new Exception("Cannot unmarshal type Disambiguation");
-        }
-
-        public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-        {
-            if (untypedValue == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-            var value = (Disambiguation)untypedValue;
-            switch (value)
-            {
-                case Disambiguation.Empty:
-                    serializer.Serialize(writer, "");
-                    return;
-                case Disambiguation.Explicit:
-                    serializer.Serialize(writer, "explicit");
-                    return;
-            }
-            throw new Exception("Cannot marshal type Disambiguation");
-        }
-
-        public static readonly DisambiguationConverter Singleton = new DisambiguationConverter();
-    }
 }
