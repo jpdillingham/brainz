@@ -6,6 +6,36 @@ namespace Brainz
 {
     public static class Extensions
     {
+        public static DateTime ToFuzzyDateTime(this string s)
+        {
+            if (s.Length == 2)
+            {
+                if (int.Parse(s) < 30)
+                {
+                    return DateTime.Parse($"1-1-20{s}");
+                }
+
+                return DateTime.Parse($"1-1-19{s}");
+            }
+
+            if (s.Length == 4)
+            {
+                return DateTime.Parse($"1-1-{s}");
+            }
+
+            else return DateTime.Parse(s);
+        }
+
+        public static double Similarity(this string s, string t)
+        {
+            return (1.0 - ((double)s.LevenshteinDistance(t) / (double)Math.Max(s.Length, t.Length)));
+        }
+
+        public static double SimilarityCaseInsensitive(this string s, string t)
+        {
+            return (1.0 - ((double)s.LevenshteinDistanceCaseInsensitive(t) / (double)Math.Max(s.Length, t.Length)));
+        }
+
         public static int LevenshteinDistanceCaseInsensitive(this string s, string t)
         {
             return s.ToLower().LevenshteinDistance(t.ToLower());
