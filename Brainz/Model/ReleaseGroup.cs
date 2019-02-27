@@ -125,5 +125,5 @@ namespace Brainz.ReleaseGroup
 
     public enum PrimaryType { Album };
 
-    public enum SecondaryType { Compilation, Live };
+    public enum SecondaryType { Compilation, Live, Demo };
 }
