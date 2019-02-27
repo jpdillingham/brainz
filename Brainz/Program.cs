@@ -86,7 +86,7 @@ namespace Brainz
             var releasesResponse = JsonConvert.DeserializeObject<ReleaseResponse>(releasesJson);
             var releases = releasesResponse.Releases.OrderBy(r => r.Date.ToFuzzyDateTime());
 
-            Console.WriteLine(releasesJson);
+            //Console.WriteLine(releasesJson);
 
             var bestRelease = releases
                 .Where(r => r.Status == "Official")
@@ -95,16 +95,22 @@ namespace Brainz
 
             foreach (var release in releases)
             {
-                Console.WriteLine($"{release.Title}\t{release.Country}\t{release.Date}\t{release");
+                string trackStr = string.Join("+", release.Media.Select(m => m.TrackCount));
+                string mediaStr = string.Join("+", release.Media.Select(m => m.Format));
+
+                Console.WriteLine($"{(release.Id == bestRelease.Id ? "-->" : "   ")} {release.Title}\t{release.Country}\t{release.Date.PadRight(10)}\t{trackStr}\t{mediaStr}");
             }
 
+            Console.WriteLine();
             Console.WriteLine($"Best release match: {bestRelease.Title}");
 
             req = RecordingRequest(bestRelease.Id);
-            Console.WriteLine($"Fetching {req}...");
+            Console.WriteLine();
+            Console.WriteLine($"Fetching recordings for release '{bestRelease.Title}' ({bestRelease.Id})");
+            Console.WriteLine();
+
             var recordingJson = await Http.GetStringAsync(req).ConfigureAwait(false);
             var recordingResponse = JsonConvert.DeserializeObject<RecordingResponse>(recordingJson);
-            Console.WriteLine($"{recordingResponse.Media[0].Tracks.Count()} recordings returned.");
 
             foreach (var media in recordingResponse.Media)
             {
