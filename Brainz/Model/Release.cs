@@ -36,7 +36,7 @@ namespace Brainz.Release
         public string Asin { get; set; }
 
         [JsonProperty("status-id")]
-        public Guid StatusId { get; set; }
+        public Guid? StatusId { get; set; }
 
         [JsonProperty("disambiguation")]
         public string Disambiguation { get; set; }
@@ -99,7 +99,7 @@ namespace Brainz.Release
     public partial class Media
     {
         [JsonProperty("format-id")]
-        public Guid FormatId { get; set; }
+        public Guid? FormatId { get; set; }
 
         [JsonProperty("track-count")]
         public long TrackCount { get; set; }

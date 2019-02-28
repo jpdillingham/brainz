@@ -182,6 +182,4 @@ namespace Brainz.Recording
         [JsonProperty("script")]
         public string Script { get; set; }
     }
-
-    public enum Disambiguation { Empty, Explicit };
 }

@@ -39,10 +39,10 @@ namespace Brainz.ReleaseGroup
         public string FirstReleaseDate { get; set; }
 
         [JsonProperty("primary-type-id")]
-        public Guid PrimaryTypeId { get; set; }
+        public Guid? PrimaryTypeId { get; set; }
 
         [JsonProperty("primary-type")]
-        public PrimaryType PrimaryType { get; set; }
+        public string PrimaryType { get; set; }
 
         [JsonProperty("id")]
         public Guid Id { get; set; }
@@ -51,11 +51,6 @@ namespace Brainz.ReleaseGroup
         public string Title { get; set; }
 
         [JsonProperty("secondary-types")]
-        public SecondaryType[] SecondaryTypes { get; set; }
+        public string[] SecondaryTypes { get; set; }
     }
-
-    // from the docs: nat, album, single, ep, compilation, soundtrack, spokenword, interview, audiobook, live, remix, other
-    public enum PrimaryType { NAT, Album, Single, EP };
-
-    public enum SecondaryType { Demo, Compilation, Soundtrack, SpokenWord, Interview, AudioBook, Live, Remix, Other };
 }
