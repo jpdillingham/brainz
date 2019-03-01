@@ -24,7 +24,7 @@
 
 /*
 
-     ,. brainz
+       ,. brainz
  (¬º-°)¬ 
 
  */
@@ -107,7 +107,7 @@ namespace Brainz
         static int Main(string[] args)
         {
             Output(string.Empty);
-            Output("      ,. brainz");
+            Output("       , brainz");
             Output(" (¬º-°)¬ ");
             Output(string.Empty);
 
