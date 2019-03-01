@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Utility.CommandLine;
-using System.Collections.Generic;
-using Brainz.Responses;
-using Brainz.Model;
-
-namespace Brainz
+﻿namespace Brainz
 {
+    using Newtonsoft.Json;
+    using System;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using Utility.CommandLine;
+    using System.Collections.Generic;
+    using Brainz.Responses;
+    using Brainz.Model;
+
     public enum Verbosity
     {
         None,
@@ -19,44 +19,28 @@ namespace Brainz
 
     class Program
     {
-        [Argument('a', "artist", "The name of the artist to search for.")]
-        private static string Artist { get; set; }
+        private static readonly string ApiRoot = @"https://musicbrainz.org/ws/2";
+        private static readonly string UserAgent = "Brainz/1.00 (https://github.com/jpdillingham/Brainz)";
 
         [Argument('l', "album", "The name of the album to search for.")]
         private static string Album { get; set; }
 
+        [Argument('a', "artist", "The name of the artist to search for.")]
+        private static string Artist { get; set; }
+
         [Argument('v', "verbosity", "The program output verbosity (None, Default, Verbose)")]
         private static string VerbosityLevel { get; set; }
 
+        private static HttpClient Http { get; } = new HttpClient();
         private static Verbosity Verbosity { get; set; } = Verbosity.Default;
 
         private static Action<string> Output { get; } = (msg) => { if (Verbosity >= Verbosity.Default) Console.WriteLine(msg); };
         private static Action<string> Verbose { get; } = (msg) => { if (Verbosity == Verbosity.Verbose) Console.WriteLine(msg); };
 
-        private static HttpClient Http { get; } = new HttpClient();
-
-        private static readonly string UserAgent = "Brainz/1.00 (https://github.com/jpdillingham/Brainz)";
-        private static readonly string ApiRoot = @"https://musicbrainz.org/ws/2";
-
         private static Func<string, string> ArtistRequest => (artist) => $"{ApiRoot}/artist/?query={artist}&fmt=json";
+        private static Func<Guid, string> RecordingRequest => (mbid) => $"{ApiRoot}/release/{mbid}?inc=recordings&fmt=json";
         private static Func<Guid, int, int, string> ReleaseGroupRequest => (mbid, offset, limit) => $"{ApiRoot}/release-group?artist={mbid}&offset={offset}&limit={limit}&fmt=json";
         private static Func<Guid, int, int, string> ReleaseRequest => (mbid, offset, limit) => $"{ApiRoot}/release?release-group={mbid}&offset={offset}&limit={limit}&inc=media&fmt=json";
-        private static Func<Guid, string> RecordingRequest => (mbid) => $"{ApiRoot}/release/{mbid}?inc=recordings&fmt=json";
-
-        static int Main(string[] args)
-        {
-            Arguments.Populate();
-
-            Artist = Artist ?? "atmosphere";
-            Album = Album ?? "fishing";
-
-            Enum.TryParse<Verbosity>(VerbosityLevel, out var verbosity);
-            Verbosity = verbosity;
-
-            Http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-
-            return Task.Run(() => MainAsync(args)).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
 
         private static async Task<T> Get<T>(string request)
         {
@@ -87,6 +71,21 @@ namespace Brainz
             Output($"Best artist match: {bestArtist.Name} (score: {bestArtist.Score}%)");
 
             return bestArtist;
+        }
+
+        static int Main(string[] args)
+        {
+            Arguments.Populate();
+
+            Artist = Artist ?? "atmosphere";
+            Album = Album ?? "fishing";
+
+            Enum.TryParse<Verbosity>(VerbosityLevel, out var verbosity);
+            Verbosity = verbosity;
+
+            Http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+
+            return Task.Run(() => MainAsync(args)).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         private static async Task<int> MainAsync(string[] args)
