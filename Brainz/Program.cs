@@ -10,18 +10,33 @@ using Brainz.Model;
 
 namespace Brainz
 {
+    public enum Verbosity
+    {
+        None,
+        Default,
+        Verbose,
+    }
+
     class Program
     {
         [Argument('a', "artist", "The name of the artist to search for.")]
-        private static string Artist { get; set; } = "atmosphere";
+        private static string Artist { get; set; }
 
         [Argument('l', "album", "The name of the album to search for.")]
-        private static string Album { get; set; } = "fishing";
+        private static string Album { get; set; }
+
+        [Argument('v', "verbosity", "The program output verbosity (None, Default, Verbose)")]
+        private static string VerbosityLevel { get; set; }
+
+        private static Verbosity Verbosity { get; set; } = Verbosity.Default;
+
+        private static Action<string> Output { get; } = (msg) => { if (Verbosity >= Verbosity.Default) Console.WriteLine(msg); };
+        private static Action<string> Verbose { get; } = (msg) => { if (Verbosity == Verbosity.Verbose) Console.WriteLine(msg); };
 
         private static HttpClient Http { get; } = new HttpClient();
 
-        private static string UserAgent = "Brainz/1.00 (https://github.com/jpdillingham/Brainz)";
-        private static string ApiRoot = @"https://musicbrainz.org/ws/2";
+        private static readonly string UserAgent = "Brainz/1.00 (https://github.com/jpdillingham/Brainz)";
+        private static readonly string ApiRoot = @"https://musicbrainz.org/ws/2";
 
         private static Func<string, string> ArtistRequest => (artist) => $"{ApiRoot}/artist/?query={artist}&fmt=json";
         private static Func<Guid, int, int, string> ReleaseGroupRequest => (mbid, offset, limit) => $"{ApiRoot}/release-group?artist={mbid}&offset={offset}&limit={limit}&fmt=json";
@@ -30,7 +45,13 @@ namespace Brainz
 
         static int Main(string[] args)
         {
-            //Arguments.Populate();
+            Arguments.Populate();
+
+            Artist = Artist ?? "atmosphere";
+            Album = Album ?? "fishing";
+
+            Enum.TryParse<Verbosity>(VerbosityLevel, out var verbosity);
+            Verbosity = verbosity;
 
             Http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 
@@ -43,22 +64,34 @@ namespace Brainz
             return JsonConvert.DeserializeObject<T>(json);
         }
 
-        private static async Task<int> MainAsync(string[] args)
+        private static async Task<Artist> GetBestArtist(string search)
         {
-            Console.WriteLine($"Fetching artist matches for '{Artist}'...");
+            Output($"Fetching artist matches for '{Artist}'...");
 
-            var artists = (await Get<ArtistResponse>(ArtistRequest(Artist))).Artists
+            var request = ArtistRequest(Artist);
+            Verbose($"Fetching: {request}...");
+
+            var artists = (await Get<ArtistResponse>(request)).Artists
                 .OrderByDescending(a => a.Score);
+
+            Verbose($"Fetched {artists.Count()} artists.");
 
             var bestArtist = artists.FirstOrDefault();
 
-            foreach (var artist in artists.Take(10))
+            foreach (var artist in Verbosity == Verbosity.Verbose ? artists : artists.Take(5))
             {
                 var disambiguation = string.IsNullOrEmpty(artist.Disambiguation) ? string.Empty : $"({artist.Disambiguation})";
-                Console.WriteLine($"{(artist.Id == bestArtist.Id ? "-->" : "   ")} {artist.Score.ToString().PadLeft(3)}%   {artist.Name} {disambiguation}");
+                Output($"{(artist.Id == bestArtist.Id ? "-->" : "   ")} {artist.Score.ToString().PadLeft(3)}%   {artist.Name} {disambiguation}");
             }
 
-            Console.WriteLine($"Best artist match: {bestArtist.Name} (score: {bestArtist.Score}%)");
+            Output($"Best artist match: {bestArtist.Name} (score: {bestArtist.Score}%)");
+
+            return bestArtist;
+        }
+
+        private static async Task<int> MainAsync(string[] args)
+        {
+            var bestArtist = await GetBestArtist(Artist);
 
             Console.WriteLine($"Fetching release group matches for artist '{bestArtist.Name}', album '{Album}'...");
 
