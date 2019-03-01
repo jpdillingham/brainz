@@ -1,7 +1,7 @@
-﻿namespace Brainz.Responses
+﻿namespace brainz.Responses
 {
     using System;
-    using Brainz.Model;
+    using brainz.Model;
     using Newtonsoft.Json;
 
     public class ArtistResponse

@@ -3,5 +3,5 @@
  (¬º-°)¬ 
 ```
 
-# Brainz
-A lightweight MusicBrainz CLI in .NET Core
+# brainz
+A lightweight Musicbrainz CLI in .NET Core

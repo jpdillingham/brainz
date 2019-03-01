@@ -1,7 +1,7 @@
-﻿namespace Brainz.Responses
+﻿namespace brainz.Responses
 {
     using Newtonsoft.Json;
-    using Brainz.Model;
+    using brainz.Model;
 
     public partial class ReleaseResponse
     {

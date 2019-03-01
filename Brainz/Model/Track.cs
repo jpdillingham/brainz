@@ -1,4 +1,4 @@
-﻿namespace Brainz.Model
+﻿namespace brainz.Model
 {
     using System;
     using Newtonsoft.Json;

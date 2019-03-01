@@ -1,4 +1,8 @@
 ﻿// <copyright file="Program.cs" company="JP Dillingham">
+//
+//            ,. brainz
+//      (¬º-°)¬ 
+//
 //      MIT License
 //  
 //      Copyright(c) 2019 JP Dillingham
@@ -22,14 +26,7 @@
 //      SOFTWARE.
 // </copyright>
 
-/*
-
-       ,. brainz
- (¬º-°)¬ 
-
- */
-
-namespace Brainz
+namespace brainz
 {
     using Newtonsoft.Json;
     using System;
@@ -38,8 +35,9 @@ namespace Brainz
     using System.Threading.Tasks;
     using Utility.CommandLine;
     using System.Collections.Generic;
-    using Brainz.Responses;
-    using Brainz.Model;
+    using brainz.Responses;
+    using brainz.Model;
+    using System.Reflection;
 
     public enum Verbosity
     {
@@ -51,7 +49,12 @@ namespace Brainz
     class Program
     {
         private static readonly string ApiRoot = @"https://musicbrainz.org/ws/2";
-        private static readonly string UserAgent = "Brainz/1.00 (https://github.com/jpdillingham/Brainz)";
+
+        private static readonly Assembly Assembly = Assembly.GetExecutingAssembly();
+        private static readonly string AssemblyVersion = Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        private static readonly string AssemblyCompany = Assembly.GetCustomAttribute<AssemblyCompanyAttribute>().Company;
+        private static readonly string AssemblyProduct = Assembly.GetCustomAttribute<AssemblyProductAttribute>().Product;
+        private static readonly string UserAgent = $"{AssemblyProduct}/{AssemblyVersion} ({AssemblyCompany})";
 
         [Argument('l', "album", "The name of the album to search for.")]
         private static string Album { get; set; }
@@ -107,7 +110,7 @@ namespace Brainz
         static int Main(string[] args)
         {
             Output(string.Empty);
-            Output("       , brainz");
+            Output("       ,. brainz");
             Output(" (¬º-°)¬ ");
             Output(string.Empty);
 
