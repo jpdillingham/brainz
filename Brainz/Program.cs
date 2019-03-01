@@ -4,11 +4,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Utility.CommandLine;
-using Brainz.Artist;
-using Brainz.ReleaseGroup;
-using Brainz.Release;
-using Brainz.Recording;
 using System.Collections.Generic;
+using Brainz.Responses;
+using Brainz.Model;
 
 namespace Brainz
 {
@@ -68,7 +66,7 @@ namespace Brainz
             Console.WriteLine($"Fetching release group matches for artist '{bestArtist.Name}', album '{Album}'...");
             Console.WriteLine();
 
-            List<ReleaseGroup.ReleaseGroup> releaseGroups = new List<ReleaseGroup.ReleaseGroup>();
+            List<ReleaseGroup> releaseGroups = new List<ReleaseGroup>();
             ReleaseGroupResponse releaseGroupResponse = null;
 
             do
@@ -98,7 +96,7 @@ namespace Brainz
             Console.WriteLine($"Fetching releases for release group '{bestReleaseGroup.Title}'...");
             Console.WriteLine();
 
-            List<Release.Release> releases = new List<Release.Release>();
+            List<Release> releases = new List<Release>();
             ReleaseResponse releasesResponse = null;
 
             do
