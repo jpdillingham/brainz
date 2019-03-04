@@ -2,12 +2,15 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
+	model "./model"
 	util "./util"
 )
 
@@ -25,8 +28,23 @@ func main() {
 	fmt.Println(album)
 
 	fmt.Println(artistRequest(artist))
+	getBestArtist(artist)
+}
 
-	fmt.Println(httpGet(artistRequest(artist)))
+func getBestArtist(search string) (name string, mbid string) {
+
+	j, _ := httpGet(artistRequest(search))
+	response := model.ArtistResponse{}
+
+	err := json.Unmarshal(j, &response)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(fmt.Sprintf("Count: %d", response.Count))
+
+	return "", ""
 }
 
 func getInput() (string, string) {
@@ -37,19 +55,19 @@ func getInput() (string, string) {
 	return *artistPtr, *albumPtr
 }
 
-func httpGet(url string) (string, error) {
+func httpGet(url string) ([]byte, error) {
 	var client http.Client
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req.Header.Add("User-Agent", "brainz/1.0.0 (https://github.com/jpdillingham/brainz)")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -57,12 +75,12 @@ func httpGet(url string) (string, error) {
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		bodyString := string(bodyBytes)
-		return bodyString, nil
+		//bodyString := string(bodyBytes)
+		return bodyBytes, nil
 	}
 
-	return "", fmt.Errorf("MusicBrainz server returned status code %d", resp.StatusCode)
+	return nil, fmt.Errorf("MusicBrainz server returned status code %d", resp.StatusCode)
 }
