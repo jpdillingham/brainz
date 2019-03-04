@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 
 	model "./model"
 	util "./util"
@@ -44,7 +45,25 @@ func getBestArtist(search string) (name string, mbid string) {
 
 	fmt.Println(fmt.Sprintf("Count: %d", response.Count))
 
-	return "", ""
+	sort.Slice(response.Artists[:], func(i, j int) bool {
+		return response.Artists[i].Score > response.Artists[j].Score
+	})
+
+	for _, artist := range response.Artists {
+		fmt.Printf("%d%%\t%s\n", artist.Score, model.Artist.DisambiguatedName(artist))
+	}
+
+	return response.Artists[0].Name, response.Artists[0].ID
+}
+
+func getDisambiguatedArtistName(artist model.Artist) string {
+	disambiguation := ""
+
+	if artist.Disambiguation != "" {
+		disambiguation = fmt.Sprintf(" (%s)", artist.Disambiguation)
+	}
+
+	return fmt.Sprintf("%s%s", artist.Name, disambiguation)
 }
 
 func getInput() (string, string) {
