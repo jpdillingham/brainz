@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type Artist struct {
 	ID             string   `json:"id"`
 	Type           string   `json:"type,omitempty"`
@@ -15,4 +17,14 @@ type Artist struct {
 	Tags           []Tag    `json:"tags,omitempty"`
 	Aliases        []Alias  `json:"aliases,omitempty"`
 	Gender         string   `json:"gender,omitempty"`
+}
+
+func (artist Artist) DisambiguatedName() string {
+	disambiguation := ""
+
+	if artist.Disambiguation != "" {
+		disambiguation = fmt.Sprintf(" (%s)", artist.Disambiguation)
+	}
+
+	return fmt.Sprintf("%s%s", artist.Name, disambiguation)
 }
