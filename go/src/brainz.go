@@ -58,16 +58,6 @@ func getBestArtist(search string) (name string, mbid string, score int) {
 	return response.Artists[0].DisambiguatedName(), response.Artists[0].ID, response.Artists[0].Score
 }
 
-func getDisambiguatedArtistName(artist model.Artist) string {
-	disambiguation := ""
-
-	if artist.Disambiguation != "" {
-		disambiguation = fmt.Sprintf(" (%s)", artist.Disambiguation)
-	}
-
-	return fmt.Sprintf("%s%s", artist.Name, disambiguation)
-}
-
 func getInput() (string, string) {
 	artistPtr := flag.String("artist", "", "The artist for which to search")
 	albumPtr := flag.String("album", "", "The album for which to search")
@@ -99,7 +89,6 @@ func httpGet(url string) ([]byte, error) {
 			return nil, err
 		}
 
-		//bodyString := string(bodyBytes)
 		return bodyBytes, nil
 	}
 
