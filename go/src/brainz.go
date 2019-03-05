@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 
@@ -18,7 +19,7 @@ import (
 var stdin = bufio.NewReader(os.Stdin)
 
 var apiRoot = "https://musicbrainz.org/ws/2"
-var artistRequest = func(artist string) string { return apiRoot + "/artist/?query=" + artist + "&fmt=json" }
+var artistRequest = func(artist string) string { return apiRoot + "/artist/?query=" + url.QueryEscape(artist) + "&fmt=json" }
 
 func main() {
 	util.Logo()
@@ -29,23 +30,26 @@ func main() {
 	fmt.Println(album)
 
 	fmt.Println(artistRequest(artist))
-	bestArtist, bestArtistId, bestArtistScore := getBestArtist(artist)
+	bestArtist, bestArtistID, bestArtistScore := getBestArtist(artist)
 
-	fmt.Printf("Best artist: %s (%s) (Score: %d)\n", bestArtist, bestArtistId, bestArtistScore)
+	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist, bestArtistID, bestArtistScore)
 }
 
 func getBestArtist(search string) (name string, mbid string, score int) {
 
-	j, _ := httpGet(artistRequest(search))
-	response := model.ArtistResponse{}
-
-	err := json.Unmarshal(j, &response)
+	j, err := httpGet(artistRequest(search))
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(fmt.Sprintf("Count: %d", response.Count))
+	response := model.ArtistResponse{}
+
+	err = json.Unmarshal(j, &response)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	sort.Slice(response.Artists[:], func(i, j int) bool {
 		return response.Artists[i].Score > response.Artists[j].Score
@@ -89,6 +93,7 @@ func httpGet(url string) ([]byte, error) {
 			return nil, err
 		}
 
+		//fmt.Println(string(bodyBytes))
 		return bodyBytes, nil
 	}
 
