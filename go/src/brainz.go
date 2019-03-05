@@ -21,6 +21,11 @@ var scanner = bufio.NewScanner(os.Stdin)
 var apiRoot = "https://musicbrainz.org/ws/2"
 var artistRequest = func(artist string) string { return apiRoot + "/artist/?query=" + url.QueryEscape(artist) + "&fmt=json" }
 
+//private static Func<Guid, int, int, string> ReleaseGroupRequest => (mbid, offset, limit) => $"{ApiRoot}/release-group?artist={mbid}&offset={offset}&limit={limit}&fmt=json";
+var releaseGroupRequest = func(mbid string, offset int, limit int) string {
+	return fmt.Sprintf("%s/release-group?artist=%s&offset=%d&limit=%d&fmt=json", apiRoot, mbid, offset, limit)
+}
+
 func main() {
 	util.Logo()
 
