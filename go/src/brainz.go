@@ -35,9 +35,10 @@ func main() {
 	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist, bestArtistID, bestArtistScore)
 }
 
-func getBestArtist(search string) (name string, mbid string, score int) {
+func getBestArtist(artist string) (name string, mbid string, score int) {
+	fmt.Printf("\nSearching for artists matching '%s'...\n\n", artist)
 
-	j, err := httpGet(artistRequest(search))
+	j, err := httpGet(artistRequest(artist))
 
 	if err != nil {
 		log.Fatal(err)
@@ -55,8 +56,18 @@ func getBestArtist(search string) (name string, mbid string, score int) {
 		return response.Artists[i].Score > response.Artists[j].Score
 	})
 
-	for _, artist := range response.Artists {
-		fmt.Printf("%d%%\t%s\n", artist.Score, artist.DisambiguatedName())
+	for index, artist := range response.Artists {
+		prefix := "   "
+
+		if index == 0 {
+			prefix = "-->"
+		}
+
+		if index < 5 {
+			fmt.Printf("%s %3d%%\t%s\n", prefix, artist.Score, artist.DisambiguatedName())
+		} else {
+			break
+		}
 	}
 
 	return response.Artists[0].DisambiguatedName(), response.Artists[0].ID, response.Artists[0].Score
