@@ -16,7 +16,7 @@ import (
 	util "./util"
 )
 
-var stdin = bufio.NewReader(os.Stdin)
+var scanner = bufio.NewScanner(os.Stdin)
 
 var apiRoot = "https://musicbrainz.org/ws/2"
 var artistRequest = func(artist string) string { return apiRoot + "/artist/?query=" + url.QueryEscape(artist) + "&fmt=json" }
@@ -33,6 +33,37 @@ func main() {
 	bestArtist, bestArtistID, bestArtistScore := getBestArtist(artist)
 
 	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist, bestArtistID, bestArtistScore)
+}
+
+func getInput() (string, string) {
+	artistPtr := flag.String("artist", "", "The artist for which to search")
+	albumPtr := flag.String("album", "", "The album for which to search")
+	flag.Parse()
+
+	if *artistPtr == "" {
+		artistInput := promptForInput("Enter artist: ")
+		artistPtr = &artistInput
+	}
+
+	if *albumPtr == "" {
+		albumInput := promptForInput("Enter album: ")
+		albumPtr = &albumInput
+	}
+
+	return *artistPtr, *albumPtr
+}
+
+func promptForInput(prompt string) string {
+	fmt.Print(prompt)
+
+	input := ""
+
+	for scanner.Scan() {
+		input = scanner.Text()
+		break
+	}
+
+	return input
 }
 
 func getBestArtist(artist string) (name string, mbid string, score int) {
@@ -71,14 +102,6 @@ func getBestArtist(artist string) (name string, mbid string, score int) {
 	}
 
 	return response.Artists[0].DisambiguatedName(), response.Artists[0].ID, response.Artists[0].Score
-}
-
-func getInput() (string, string) {
-	artistPtr := flag.String("artist", "", "The artist for which to search")
-	albumPtr := flag.String("album", "", "The album for which to search")
-	flag.Parse()
-
-	return *artistPtr, *albumPtr
 }
 
 func httpGet(url string) ([]byte, error) {
