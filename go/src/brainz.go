@@ -35,9 +35,9 @@ func main() {
 	fmt.Println(album)
 
 	fmt.Println(artistRequest(artist))
-	bestArtist, bestArtistID, bestArtistScore := getBestArtist(artist)
+	bestArtist := getBestArtist(artist)
 
-	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist, bestArtistID, bestArtistScore)
+	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist.DisambiguatedName(), bestArtist.ID, bestArtist.Score)
 }
 
 func getInput() (string, string) {
@@ -71,7 +71,7 @@ func promptForInput(prompt string) string {
 	return input
 }
 
-func getBestArtist(artist string) (name string, mbid string, score int) {
+func getBestArtist(artist string) (bestArtist model.Artist) {
 	fmt.Printf("\nSearching for artists matching '%s'...\n\n", artist)
 
 	j, err := httpGet(artistRequest(artist))
@@ -106,7 +106,7 @@ func getBestArtist(artist string) (name string, mbid string, score int) {
 		}
 	}
 
-	return response.Artists[0].DisambiguatedName(), response.Artists[0].ID, response.Artists[0].Score
+	return response.Artists[0]
 }
 
 func httpGet(url string) ([]byte, error) {
