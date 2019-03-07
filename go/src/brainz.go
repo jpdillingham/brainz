@@ -11,6 +11,9 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
+
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 
 	model "./model"
 	responses "./responses"
@@ -27,22 +30,22 @@ var releaseGroupRequest = func(mbid string, offset int, limit int) string {
 	return fmt.Sprintf("%s/release-group?artist=%s&offset=%d&limit=%d&fmt=json", apiRoot, mbid, offset, limit)
 }
 
+var distance = func(source string, target string) float64 {
+	return levenshtein.RatioForStrings([]rune(strings.ToLower(source)), []rune(strings.ToLower(target)), levenshtein.DefaultOptions)
+}
+
 func main() {
 	util.Logo()
 
 	artist, album := getInput()
 
-	fmt.Println(artist)
-	fmt.Println(album)
-
-	fmt.Println(artistRequest(artist))
 	bestArtist := getBestArtist(artist)
 
-	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist.DisambiguatedName(), bestArtist.ID, bestArtist.Score)
+	fmt.Printf("\nBest artist: %s (%s) (Score: %d%%)\n\n", bestArtist.DisambiguatedName(), bestArtist.ID, bestArtist.Score)
 
 	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
 
-	fmt.Printf("\nBest release group: '%s'", bestReleaseGroup.Title)
+	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n", bestReleaseGroup.Title, bestReleaseGroup.ID, distance(bestReleaseGroup.Title, album)*100)
 }
 
 func getInput() (string, string) {
@@ -77,7 +80,7 @@ func promptForInput(prompt string) string {
 }
 
 func getBestArtist(artist string) (bestArtist model.Artist) {
-	fmt.Printf("\nSearching for artists matching '%s'...\n\n", artist)
+	fmt.Printf("Searching for artists matching '%s'...\n\n", artist)
 
 	j, err := httpGet(artistRequest(artist))
 
@@ -114,8 +117,8 @@ func getBestArtist(artist string) (bestArtist model.Artist) {
 	return response.Artists[0]
 }
 
-func getBestReleaseGroup(releaseGroup string, mbid string) (bestReleaseGroup model.ReleaseGroup) {
-	fmt.Printf("\nSearching for release group matching '%s'...\n\n", releaseGroup)
+func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.ReleaseGroup) {
+	fmt.Printf("Searching for release group matching '%s'...\n\n", album)
 
 	response := responses.ReleaseGroupResponse{}
 	var releaseGroups = []model.ReleaseGroup{}
@@ -140,7 +143,25 @@ func getBestReleaseGroup(releaseGroup string, mbid string) (bestReleaseGroup mod
 		}
 	}
 
-	return response.ReleaseGroups[0]
+	sort.Slice(releaseGroups[:], func(i, j int) bool {
+		return distance(releaseGroups[i].Title, album) > distance(releaseGroups[j].Title, album)
+	})
+
+	for index, releaseGroup := range releaseGroups {
+		prefix := "   "
+
+		if index == 0 {
+			prefix = "-->"
+		}
+
+		if index < 5 {
+			fmt.Printf("%s %3.0f%%\t%s\n", prefix, distance(releaseGroup.Title, album)*100, releaseGroup.DisambiguatedName())
+		} else {
+			break
+		}
+	}
+
+	return releaseGroups[0]
 }
 
 func httpGet(url string) ([]byte, error) {
