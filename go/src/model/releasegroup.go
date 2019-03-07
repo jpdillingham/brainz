@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type ReleaseGroup struct {
 	SecondaryTypeIDs []string `json:"secondary-type-ids"`
 	Disambiguation   string   `json:"disambiguation"`
@@ -9,4 +11,14 @@ type ReleaseGroup struct {
 	ID               string   `json:"id"`
 	Title            string   `json:"title"`
 	SecondaryTypes   []string `json:"secondary-types"`
+}
+
+func (releaseGroup ReleaseGroup) DisambiguatedName() string {
+	disambiguation := ""
+
+	if releaseGroup.Disambiguation != "" {
+		disambiguation = fmt.Sprintf(" (%s)", releaseGroup.Disambiguation)
+	}
+
+	return fmt.Sprintf("%s%s", releaseGroup.Title, disambiguation)
 }
