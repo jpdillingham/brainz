@@ -13,6 +13,7 @@ import (
 	"sort"
 
 	model "./model"
+	responses "./responses"
 	util "./util"
 )
 
@@ -38,6 +39,10 @@ func main() {
 	bestArtist := getBestArtist(artist)
 
 	fmt.Printf("\nBest artist: %s (%s) (Score: %d)\n", bestArtist.DisambiguatedName(), bestArtist.ID, bestArtist.Score)
+
+	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
+
+	fmt.Printf("\nBest release group: '%s'", bestReleaseGroup.Title)
 }
 
 func getInput() (string, string) {
@@ -80,7 +85,7 @@ func getBestArtist(artist string) (bestArtist model.Artist) {
 		log.Fatal(err)
 	}
 
-	response := model.ArtistResponse{}
+	response := responses.ArtistResponse{}
 
 	err = json.Unmarshal(j, &response)
 
@@ -107,6 +112,35 @@ func getBestArtist(artist string) (bestArtist model.Artist) {
 	}
 
 	return response.Artists[0]
+}
+
+func getBestReleaseGroup(releaseGroup string, mbid string) (bestReleaseGroup model.ReleaseGroup) {
+	fmt.Printf("\nSearching for release group matching '%s'...\n\n", releaseGroup)
+
+	response := responses.ReleaseGroupResponse{}
+	var releaseGroups = []model.ReleaseGroup{}
+
+	for true {
+		j, err := httpGet(releaseGroupRequest(mbid, len(releaseGroups), 100))
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = json.Unmarshal(j, &response)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		releaseGroups = append(releaseGroups[:], response.ReleaseGroups[:]...)
+
+		if len(releaseGroups) >= response.ReleaseGroupCount {
+			break
+		}
+	}
+
+	return response.ReleaseGroups[0]
 }
 
 func httpGet(url string) ([]byte, error) {
