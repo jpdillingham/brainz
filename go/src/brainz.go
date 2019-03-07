@@ -133,7 +133,7 @@ func getBestReleaseGroup(releaseGroup string, mbid string) (bestReleaseGroup mod
 			log.Fatal(err)
 		}
 
-		releaseGroups = append(releaseGroups[:], response.ReleaseGroups[:]...)
+		releaseGroups = append(releaseGroups, response.ReleaseGroups[:]...)
 
 		if len(releaseGroups) >= response.ReleaseGroupCount {
 			break
