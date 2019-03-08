@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type Release struct {
 	PackagingID        string             `json:"packaging-id"`
 	Asin               string             `json:"asin"`
@@ -17,4 +19,14 @@ type Release struct {
 	ID                 string             `json:"id"`
 	Media              []Media            `json:"media"`
 	Barcode            string             `json:"barcode"`
+}
+
+func (release Release) DisambiguatedName() string {
+	disambiguation := ""
+
+	if release.Disambiguation != "" {
+		disambiguation = fmt.Sprintf(" (%s)", release.Disambiguation)
+	}
+
+	return fmt.Sprintf("%s%s", release.Title, disambiguation)
 }
