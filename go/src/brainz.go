@@ -24,10 +24,11 @@ var scanner = bufio.NewScanner(os.Stdin)
 
 var apiRoot = "https://musicbrainz.org/ws/2"
 var artistRequest = func(artist string) string { return apiRoot + "/artist/?query=" + url.QueryEscape(artist) + "&fmt=json" }
-
-//private static Func<Guid, int, int, string> ReleaseGroupRequest => (mbid, offset, limit) => $"{ApiRoot}/release-group?artist={mbid}&offset={offset}&limit={limit}&fmt=json";
 var releaseGroupRequest = func(mbid string, offset int, limit int) string {
 	return fmt.Sprintf("%s/release-group?artist=%s&offset=%d&limit=%d&fmt=json", apiRoot, mbid, offset, limit)
+}
+var releaseRequest = func(mbid string, offset int, limit int) string {
+	return fmt.Sprintf("%s/release?release-group=%s&offset=%d&limit=%d&inc=media+recordings&fmt=json", apiRoot, mbid, offset, limit)
 }
 
 var distance = func(source string, target string) float64 {
@@ -46,6 +47,10 @@ func main() {
 	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
 
 	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n", bestReleaseGroup.Title, bestReleaseGroup.ID, distance(bestReleaseGroup.Title, album)*100)
+
+	bestRelease, releaseScore := getBestRelease(bestReleaseGroup.ID)
+
+	fmt.Printf("\nBest release: %s (%s) (Score: %.0f%%)\n", bestRelease.DisambiguatedName(), bestRelease.ID, releaseScore)
 }
 
 func getInput() (string, string) {
@@ -162,6 +167,50 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 	}
 
 	return releaseGroups[0]
+}
+
+func getBestRelease(mbid string) (bestRelease model.Release, score int) {
+	fmt.Printf("Selecting best release...\n\n")
+	fmt.Printf("\n%s\n", releaseRequest(mbid, 0, 100))
+
+	response := responses.ReleaseResponse{}
+	var releases = []model.Release{}
+
+	for true {
+		j, err := httpGet(releaseRequest(mbid, len(releases), 100))
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = json.Unmarshal(j, &response)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		releases = append(releases, response.Releases[:]...)
+
+		if len(releases) >= response.ReleaseCount {
+			break
+		}
+	}
+
+	for index, release := range releases {
+		prefix := "   "
+
+		if index == 0 {
+			prefix = "-->"
+		}
+
+		if index < 5 {
+			fmt.Printf("%s %3.0f%%\t%s\n", prefix, 0, release.DisambiguatedName())
+		} else {
+			break
+		}
+	}
+
+	return releases[0], 0
 }
 
 func httpGet(url string) ([]byte, error) {
