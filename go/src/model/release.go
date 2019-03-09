@@ -35,7 +35,7 @@ func (release Release) DisambiguatedTitle() string {
 	return fmt.Sprintf("%s%s", release.Title, disambiguation)
 }
 
-func (release Release) MediaInfo() (string, string) {
+func (release Release) MediaInfo() (formats string, tracks string) {
 	mediaArray := []string{}
 	trackArray := []string{}
 
