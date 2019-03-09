@@ -38,7 +38,7 @@ func main() {
 
 	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, util.Distance(bestReleaseGroup.Title, album)*100)
 
-	trackList := getTrackList(bestReleaseGroup.ID)
+	trackList := getCanonicalTrackList(bestReleaseGroup.ID)
 
 	for _, track := range trackList {
 		fmt.Printf("%s. %s\n", track.Number, track.Title)
@@ -168,13 +168,14 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 	return releaseGroups[0]
 }
 
-func getTrackList(mbid string) (tracks []model.Track) {
+func getCanonicalTrackList(mbid string) (tracks []model.Track) {
 	fmt.Printf("Determining canonical track listing...\n\n")
 
 	response := responses.ReleaseResponse{}
 	var releases = []model.Release{}
 
 	for true {
+		fmt.Println(releaseRequest(mbid, len(releases), 100))
 		j, err := util.HttpGet(releaseRequest(mbid, len(releases), 100))
 
 		if err != nil {
@@ -194,6 +195,31 @@ func getTrackList(mbid string) (tracks []model.Track) {
 		}
 	}
 
+	releases = filterNonCanonicalReleases(releases)
+
+	// for each media in the master release
+	for mediaIndex, media := range releases[0].Media {
+		// for each track in the master release
+		for trackIndex, track := range media.Tracks {
+			// for each release that isn't the master
+			match := 1.0
+			for i := range releases {
+				if i > 0 {
+					otherTrack := releases[i].Media[mediaIndex].Tracks[trackIndex]
+					if otherTrack.Title == track.Title {
+						match++
+					}
+				}
+			}
+
+			fmt.Printf("%3.0f%%\t%d%02d\t%s\n", match/float64(len(releases))*100, media.Position, track.Position, track.Title)
+		}
+	}
+
+	return releases[0].Media[0].Tracks
+}
+
+func filterNonCanonicalReleases(releases []model.Release) (canonicalReleases []model.Release) {
 	canonicalFormat, canonicalTracks, formatErr := getCanonicalFormat(releases)
 
 	if formatErr == nil {
@@ -207,15 +233,37 @@ func getTrackList(mbid string) (tracks []model.Track) {
 
 			if releaseFormat == canonicalFormat && releaseTracks == canonicalTracks {
 				filteredReleases = append(filteredReleases, release)
-				// date, _ := release.FuzzyDate()
-				// fmt.Printf("%s\t%s\n", date, release.DisambiguatedTitle())
 			}
 		}
+
+		releases = filteredReleases
 	} else {
-		fmt.Printf("\nUnable to determine canonical format; releases are unfiltered.\n\n")
+		fmt.Printf("\nCanonical format is inconclusive.\n\n")
 	}
 
-	return releases[0].Media[0].Tracks
+	fmt.Printf("Probable canonical releases:\n\n")
+
+	sort.Slice(releases, func(i, j int) bool {
+		idate, _ := releases[i].FuzzyDate()
+		jdate, _ := releases[j].FuzzyDate()
+		return jdate.After(idate)
+	})
+
+	maxLen := 0
+	for _, release := range releases {
+		len := len(release.DisambiguatedTitle())
+		if len > maxLen {
+			maxLen = len
+		}
+	}
+
+	for _, release := range releases {
+		date, _ := release.FuzzyDate()
+		media, _ := release.MediaInfo()
+		fmt.Printf("%s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), media)
+	}
+
+	return releases
 }
 
 func getCanonicalFormat(releases []model.Release) (format string, tracks string, err error) {
