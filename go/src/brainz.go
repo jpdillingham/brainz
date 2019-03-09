@@ -48,14 +48,22 @@ func getInput() (string, string) {
 	albumPtr := flag.String("album", "", "The album for which to search")
 	flag.Parse()
 
+	prompted := false
+
 	if *artistPtr == "" {
 		artistInput := util.PromptForInput("Enter artist: ")
 		artistPtr = &artistInput
+		prompted = true
 	}
 
 	if *albumPtr == "" {
 		albumInput := util.PromptForInput("Enter album: ")
 		albumPtr = &albumInput
+		prompted = true
+	}
+
+	if prompted {
+		fmt.Println()
 	}
 
 	return *artistPtr, *albumPtr
