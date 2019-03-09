@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type ReleaseGroup struct {
 	SecondaryTypeIDs []string `json:"secondary-type-ids"`
@@ -21,4 +24,11 @@ func (releaseGroup ReleaseGroup) DisambiguatedTitle() string {
 	}
 
 	return fmt.Sprintf("%s%s", releaseGroup.Title, disambiguation)
+}
+
+func (releaseGroup ReleaseGroup) Types() string {
+	types := []string{releaseGroup.PrimaryType}
+	types = append(types, releaseGroup.SecondaryTypes[:]...)
+
+	return strings.Join(types, ", ")
 }
