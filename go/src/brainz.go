@@ -46,11 +46,13 @@ func main() {
 
 	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
 
-	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n", bestReleaseGroup.Title, bestReleaseGroup.ID, distance(bestReleaseGroup.Title, album)*100)
+	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, distance(bestReleaseGroup.Title, album)*100)
 
-	bestRelease, releaseScore := getBestRelease(bestReleaseGroup.ID)
+	trackList := getTrackList(bestReleaseGroup.ID)
 
-	fmt.Printf("\nBest release: %s (%s) (Score: %.0f%%)\n", bestRelease.DisambiguatedName(), bestRelease.ID, releaseScore)
+	for _, track := range trackList {
+		fmt.Printf("%s. %s\n", track.Number, track.Title)
+	}
 }
 
 func getInput() (string, string) {
@@ -169,7 +171,7 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 	return releaseGroups[0]
 }
 
-func getBestRelease(mbid string) (bestRelease model.Release, score int) {
+func getTrackList(mbid string) (tracks []model.Track) {
 	fmt.Printf("Selecting best release...\n\n")
 	fmt.Printf("\n%s\n", releaseRequest(mbid, 0, 100))
 
@@ -210,7 +212,7 @@ func getBestRelease(mbid string) (bestRelease model.Release, score int) {
 		}
 	}
 
-	return releases[0], 0
+	return releases[0].Media[0].Tracks
 }
 
 func httpGet(url string) ([]byte, error) {
