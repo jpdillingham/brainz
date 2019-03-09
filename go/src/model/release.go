@@ -21,7 +21,7 @@ type Release struct {
 	Barcode            string             `json:"barcode"`
 }
 
-func (release Release) DisambiguatedName() string {
+func (release Release) DisambiguatedTitle() string {
 	disambiguation := ""
 
 	if release.Disambiguation != "" {
