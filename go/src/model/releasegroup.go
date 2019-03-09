@@ -13,7 +13,7 @@ type ReleaseGroup struct {
 	SecondaryTypes   []string `json:"secondary-types"`
 }
 
-func (releaseGroup ReleaseGroup) DisambiguatedName() string {
+func (releaseGroup ReleaseGroup) DisambiguatedTitle() string {
 	disambiguation := ""
 
 	if releaseGroup.Disambiguation != "" {
