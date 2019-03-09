@@ -1,6 +1,15 @@
 package util
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/texttheater/golang-levenshtein/levenshtein"
+)
 
 // Logo prints the application logo to stdout.
 func Logo() {
@@ -8,4 +17,52 @@ func Logo() {
 	fmt.Println("       ,. brainz")
 	fmt.Println(" (¬º-°)¬        ")
 	fmt.Println()
+}
+
+func PromptForInput(prompt string) string {
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Print(prompt)
+
+	input := ""
+
+	for scanner.Scan() {
+		input = scanner.Text()
+		break
+	}
+
+	return input
+}
+
+func HttpGet(url string) ([]byte, error) {
+	var client http.Client
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("User-Agent", "brainz/1.0.0 (https://github.com/jpdillingham/brainz)")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		return bodyBytes, nil
+	}
+
+	return nil, fmt.Errorf("MusicBrainz server returned status code %d", resp.StatusCode)
+}
+
+func Distance(source string, target string) float64 {
+	return levenshtein.RatioForStrings([]rune(strings.ToLower(source)), []rune(strings.ToLower(target)), levenshtein.DefaultOptions)
 }
