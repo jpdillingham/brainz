@@ -1,6 +1,10 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 type Release struct {
 	PackagingID        string             `json:"packaging-id"`
@@ -32,19 +36,37 @@ func (release Release) DisambiguatedTitle() string {
 }
 
 func (release Release) MediaInfo() (string, string) {
-	mediastr := ""
-	trackstr := ""
+	mediaArray := []string{}
+	trackArray := []string{}
 
-	for index, media := range release.Media {
-		sep := ""
-
-		if index > 0 {
-			sep = " + "
-		}
-
-		mediastr = fmt.Sprintf("%s%s%s", mediastr, sep, media.Format)
-		trackstr = fmt.Sprintf("%s%s%d", trackstr, sep, media.TrackCount)
+	for _, media := range release.Media {
+		mediaArray = append(mediaArray, media.Format)
+		trackArray = append(trackArray, strconv.Itoa(media.TrackCount))
 	}
 
-	return mediastr, trackstr
+	if len(release.Media) == 1 {
+		return strings.Join(mediaArray, " + "), strings.Join(trackArray, " + ")
+	}
+
+	// if there's more than one type of media, iterate over the array and build a
+	// string in the format Nx<Media> where N is the number of contiguously repeated
+	// media of that type
+	// e.g. CD CD CD DVD DVD = 3xCD + 2xDVD
+	dedupedMediaArray := []string{}
+	currentstr := release.Media[0].Format
+	currentCount := 0
+
+	for _, media := range release.Media {
+		if media.Format != currentstr {
+			dedupedMediaArray = append(dedupedMediaArray, fmt.Sprintf("%dx%s", currentCount, currentstr))
+			currentstr = media.Format
+			currentCount = 1
+		} else {
+			currentCount++
+		}
+	}
+
+	dedupedMediaArray = append(dedupedMediaArray, fmt.Sprintf("%dx%s", currentCount, currentstr))
+
+	return strings.Join(dedupedMediaArray, " + "), strings.Join(trackArray, " + ")
 }
