@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Release struct {
@@ -33,6 +34,29 @@ func (release Release) DisambiguatedTitle() string {
 	}
 
 	return fmt.Sprintf("%s%s", release.Title, disambiguation)
+}
+
+func (release Release) FuzzyDate() (date time.Time, err error) {
+	format := "2006-01-02"
+
+	if len(release.Date) == 0 {
+		return time.Now(), nil
+	}
+
+	if len(release.Date) == 2 {
+		y, _ := strconv.Atoi(release.Date)
+		if y < 30 {
+			return time.Parse(format, fmt.Sprintf("20%s-12-31", release.Date))
+		}
+
+		return time.Parse(format, fmt.Sprintf("19%s-12-31", release.Date))
+	}
+
+	if len(release.Date) == 4 {
+		return time.Parse(format, fmt.Sprintf("%s-12-31", release.Date))
+	}
+
+	return time.Parse(format, release.Date)
 }
 
 func (release Release) MediaInfo() (formats string, tracks string) {
