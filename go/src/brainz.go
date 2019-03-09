@@ -1,38 +1,26 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
-	"os"
 	"sort"
-	"strings"
-
-	"github.com/texttheater/golang-levenshtein/levenshtein"
 
 	model "./model"
 	responses "./responses"
 	util "./util"
 )
 
-var scanner = bufio.NewScanner(os.Stdin)
-
 var apiRoot = "https://musicbrainz.org/ws/2"
+
 var artistRequest = func(artist string) string { return apiRoot + "/artist/?query=" + url.QueryEscape(artist) + "&fmt=json" }
 var releaseGroupRequest = func(mbid string, offset int, limit int) string {
-	return fmt.Sprintf("%s/release-group?artist=%s&offset=%d&limit=%d&fmt=json", apiRoot, mbid, offset, limit)
+	return fmt.Sprintf("%s/release-group?artist=%s&type=album|ep&offset=%d&limit=%d&fmt=json", apiRoot, mbid, offset, limit)
 }
 var releaseRequest = func(mbid string, offset int, limit int) string {
 	return fmt.Sprintf("%s/release?release-group=%s&offset=%d&limit=%d&inc=media+recordings&fmt=json", apiRoot, mbid, offset, limit)
-}
-
-var distance = func(source string, target string) float64 {
-	return levenshtein.RatioForStrings([]rune(strings.ToLower(source)), []rune(strings.ToLower(target)), levenshtein.DefaultOptions)
 }
 
 func main() {
@@ -46,7 +34,7 @@ func main() {
 
 	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
 
-	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, distance(bestReleaseGroup.Title, album)*100)
+	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, util.Distance(bestReleaseGroup.Title, album)*100)
 
 	trackList := getTrackList(bestReleaseGroup.ID)
 
@@ -61,35 +49,22 @@ func getInput() (string, string) {
 	flag.Parse()
 
 	if *artistPtr == "" {
-		artistInput := promptForInput("Enter artist: ")
+		artistInput := util.PromptForInput("Enter artist: ")
 		artistPtr = &artistInput
 	}
 
 	if *albumPtr == "" {
-		albumInput := promptForInput("Enter album: ")
+		albumInput := util.PromptForInput("Enter album: ")
 		albumPtr = &albumInput
 	}
 
 	return *artistPtr, *albumPtr
 }
 
-func promptForInput(prompt string) string {
-	fmt.Print(prompt)
-
-	input := ""
-
-	for scanner.Scan() {
-		input = scanner.Text()
-		break
-	}
-
-	return input
-}
-
 func getBestArtist(artist string) (bestArtist model.Artist) {
 	fmt.Printf("Searching for artists matching '%s'...\n\n", artist)
 
-	j, err := httpGet(artistRequest(artist))
+	j, err := util.HttpGet(artistRequest(artist))
 
 	if err != nil {
 		log.Fatal(err)
@@ -131,7 +106,8 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 	var releaseGroups = []model.ReleaseGroup{}
 
 	for true {
-		j, err := httpGet(releaseGroupRequest(mbid, len(releaseGroups), 100))
+		fmt.Printf("\n%s\n", releaseGroupRequest(mbid, len(releaseGroups), 100))
+		j, err := util.HttpGet(releaseGroupRequest(mbid, len(releaseGroups), 100))
 
 		if err != nil {
 			log.Fatal(err)
@@ -151,7 +127,7 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 	}
 
 	sort.Slice(releaseGroups[:], func(i, j int) bool {
-		return distance(releaseGroups[i].Title, album) > distance(releaseGroups[j].Title, album)
+		return util.Distance(releaseGroups[i].Title, album) > util.Distance(releaseGroups[j].Title, album)
 	})
 
 	for index, releaseGroup := range releaseGroups {
@@ -161,8 +137,8 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 			prefix = "-->"
 		}
 
-		if index < 5 {
-			fmt.Printf("%s %3.0f%%\t%s\n", prefix, distance(releaseGroup.Title, album)*100, releaseGroup.DisambiguatedName())
+		if index <= 5 {
+			fmt.Printf("%s %3.0f%%\t%s\t%s\n", prefix, util.Distance(releaseGroup.Title, album)*100, releaseGroup.DisambiguatedTitle(), releaseGroup.PrimaryType)
 		} else {
 			break
 		}
@@ -172,14 +148,14 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 }
 
 func getTrackList(mbid string) (tracks []model.Track) {
-	fmt.Printf("Selecting best release...\n\n")
-	fmt.Printf("\n%s\n", releaseRequest(mbid, 0, 100))
+	fmt.Printf("Computing canonical track list...\n\n")
+	//fmt.Printf("\n%s\n", releaseRequest(mbid, 0, 100))
 
 	response := responses.ReleaseResponse{}
 	var releases = []model.Release{}
 
 	for true {
-		j, err := httpGet(releaseRequest(mbid, len(releases), 100))
+		j, err := util.HttpGet(releaseRequest(mbid, len(releases), 100))
 
 		if err != nil {
 			log.Fatal(err)
@@ -198,49 +174,30 @@ func getTrackList(mbid string) (tracks []model.Track) {
 		}
 	}
 
-	for index, release := range releases {
-		prefix := "   "
+	//mediaCounts := make(map[string]int)
 
-		if index == 0 {
-			prefix = "-->"
-		}
-
-		if index < 5 {
-			fmt.Printf("%s %3.0f%%\t%s\n", prefix, 0, release.DisambiguatedName())
-		} else {
-			break
-		}
+	for _, release := range releases {
+		media, tracks := getMediaInfo(release)
+		fmt.Printf("%s\t%s\t%s\n", release.Title, media, tracks)
 	}
 
 	return releases[0].Media[0].Tracks
 }
 
-func httpGet(url string) ([]byte, error) {
-	var client http.Client
+func getMediaInfo(release model.Release) (mediaString string, trackString string) {
+	mediastr := ""
+	trackstr := ""
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
+	for index, media := range release.Media {
+		sep := ""
 
-	req.Header.Add("User-Agent", "brainz/1.0.0 (https://github.com/jpdillingham/brainz)")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
+		if index > 0 {
+			sep = "+"
 		}
 
-		//fmt.Println(string(bodyBytes))
-		return bodyBytes, nil
+		mediastr = fmt.Sprintf("%s%s%s", mediastr, sep, media.Format)
+		trackstr = fmt.Sprintf("%s%s%d", trackstr, sep, media.TrackCount)
 	}
 
-	return nil, fmt.Errorf("MusicBrainz server returned status code %d", resp.StatusCode)
+	return mediastr, trackstr
 }
