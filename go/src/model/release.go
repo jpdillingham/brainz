@@ -30,3 +30,21 @@ func (release Release) DisambiguatedTitle() string {
 
 	return fmt.Sprintf("%s%s", release.Title, disambiguation)
 }
+
+func (release Release) MediaInfo() (string, string) {
+	mediastr := ""
+	trackstr := ""
+
+	for index, media := range release.Media {
+		sep := ""
+
+		if index > 0 {
+			sep = " + "
+		}
+
+		mediastr = fmt.Sprintf("%s%s%s", mediastr, sep, media.Format)
+		trackstr = fmt.Sprintf("%s%s%d", trackstr, sep, media.TrackCount)
+	}
+
+	return mediastr, trackstr
+}
