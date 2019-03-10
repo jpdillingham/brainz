@@ -56,16 +56,21 @@ func main() {
 	canonicalRelease := getCanonicalRelease(releases)
 	canonicalReleaseFormat, _ := canonicalRelease.MediaInfo()
 	canonicalReleaseDate, _ := canonicalRelease.FuzzyDate()
-	out(fmt.Sprintf("Probable canonical release: %s (%s, %s, %s) (Score: %.0f%%):\n\n",
-		canonicalRelease.DisambiguatedTitle(),
-		canonicalReleaseDate.Format("2006-01-02"),
-		canonicalReleaseFormat,
-		canonicalRelease.ID,
-		canonicalRelease.Score*100))
+	out(fmt.Sprintf("Probable canonical release: %s (%s, %s, %s) (Score: %.0f%%):\n\n", canonicalRelease.DisambiguatedTitle(), canonicalReleaseDate.Format("2006-01-02"), canonicalReleaseFormat, canonicalRelease.ID, canonicalRelease.Score*100))
+
+	maxLen := 0
+	for _, media := range canonicalRelease.Media {
+		for _, track := range media.Tracks {
+			len := len(track.Title)
+			if len > maxLen {
+				maxLen = len
+			}
+		}
+	}
 
 	for _, media := range canonicalRelease.Media {
 		for _, track := range media.Tracks {
-			out(fmt.Sprintf("   %3.0f%%\t%s\t%s\t%s\n", track.Score*100, track.Number, track.Title, strings.Join(track.AlternateTitles, ", ")))
+			out(fmt.Sprintf("   %s\t%-*s\t%3.0f%%\t%s\n", track.Number, maxLen, track.Title, track.Score*100, strings.Join(track.AlternateTitles, ", ")))
 		}
 	}
 
@@ -272,10 +277,20 @@ func getCanonicalRelease(releases []model.Release) (canonicalRelease model.Relea
 
 				for i := range releases {
 					otherTrack := releases[i].Media[mediaIndex].Tracks[trackIndex]
-					if otherTrack.Title == track.Title {
+					if strings.ToLower(otherTrack.Title) == strings.ToLower(track.Title) {
 						match++
 					} else {
-						track.AlternateTitles = append(track.AlternateTitles, otherTrack.Title)
+						// prevent adding it if it's already added
+						exists := false
+						for _, alt := range track.AlternateTitles {
+							if strings.ToLower(alt) == strings.ToLower(otherTrack.Title) {
+								exists = true
+							}
+						}
+
+						if !exists {
+							track.AlternateTitles = append(track.AlternateTitles, otherTrack.Title)
+						}
 					}
 				}
 
