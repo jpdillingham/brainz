@@ -4,4 +4,4 @@
 ```
 
 # brainz
-A lightweight Musicbrainz CLI in .NET Core
+A lightweight Musicbrainz CLI in Go.
