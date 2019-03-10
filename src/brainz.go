@@ -25,46 +25,72 @@ var releaseRequest = func(mbid string, offset int, limit int) string {
 	return fmt.Sprintf("%s/release?release-group=%s&offset=%d&limit=%d&inc=media+recordings&fmt=json", apiRoot, mbid, offset, limit)
 }
 
+var out = func(msg string) {}
+
 func main() {
-	util.Logo()
+	artist, album, output := setup()
 
-	artist, album := getInput()
-
-	fmt.Printf("Searching for artists matching '%s'...\n\n", artist)
+	out(fmt.Sprintf("Searching for artists matching '%s'...\n\n", artist))
 	bestArtist := getBestArtist(artist)
-	fmt.Printf("\nBest artist: %s (%s) (Score: %d%%)\n\n", bestArtist.DisambiguatedName(), bestArtist.ID, bestArtist.Score)
+	out(fmt.Sprintf("\nBest artist: %s (%s) (Score: %d%%)\n\n", bestArtist.DisambiguatedName(), bestArtist.ID, bestArtist.Score))
 
-	fmt.Printf("Searching for release group matching '%s'...\n\n", album)
+	out(fmt.Sprintf("Searching for release group matching '%s'...\n\n", album))
 	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
-	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, util.Distance(bestReleaseGroup.Title, album)*100)
+	out(fmt.Sprintf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, util.Distance(bestReleaseGroup.Title, album)*100))
 
-	fmt.Printf("Fetching releases...\n")
+	out(fmt.Sprintf("Fetching releases...\n"))
 	releases := getAllReleases(bestReleaseGroup.ID)
 
-	fmt.Printf("Compiling formats..\n\n")
+	out(fmt.Sprintf("Compiling formats..\n\n"))
 	media, tracks, err := getCanonicalFormat(releases)
 
 	if err != nil {
-		fmt.Printf("\nInconclusive.  Assuming the earliest release is canonical.\n\n")
+		out(fmt.Sprintf("\nInconclusive.  Assuming the earliest release is canonical.\n\n"))
 		releases = []model.Release{releases[0]}
 	} else {
-		fmt.Printf("\nCanonical format: %s, tracks: %s\n\n", media, tracks)
+		out(fmt.Sprintf("\nCanonical format: %s, tracks: %s\n\n", media, tracks))
 		releases = filterNonCanonicalReleases(releases, media, tracks)
 	}
 
-	trackList := getCanonicalTrackList(releases)
+	canonicalRelease := getCanonicalRelease(releases)
+	canonicalReleaseDate, _ := canonicalRelease.FuzzyDate()
+	out(fmt.Sprintf("Probable canonical release: %s (%s, %s) (Score: %.0f%%)\n",
+		canonicalRelease.DisambiguatedTitle(),
+		canonicalRelease.ID,
+		canonicalReleaseDate.Format("2006-01-02"),
+		canonicalRelease.Score*100))
 
-	// todo: final output
-	fmt.Printf("Probable canonical track listing:\n\n")
-	for _, track := range trackList {
-		fmt.Printf("   %3.0f%%\t%s\t%s\n", track.Score*100, track.Number, track.Title)
+	out(fmt.Sprintf("Probable canonical track listing:\n\n"))
+	for _, media := range canonicalRelease.Media {
+		for _, track := range media.Tracks {
+			out(fmt.Sprintf("   %3.0f%%\t%s\t%s\n", track.Score*100, track.Number, track.Title))
+		}
+	}
+
+	if output == "json" {
+		printJSON(canonicalRelease)
 	}
 }
 
-func getInput() (string, string) {
+func printJSON(release model.Release) {
+	bytes, _ := json.Marshal(release)
+	fmt.Println(string(bytes))
+}
+
+func setup() (artist string, album string, output string) {
 	artistPtr := flag.String("artist", "", "The artist for which to search")
 	albumPtr := flag.String("album", "", "The album for which to search")
+	outputPtr := flag.String("output", "", "Output mode; json or leave blank for interactive")
+
 	flag.Parse()
+
+	if *outputPtr == "" {
+		out = func(msg string) {
+			fmt.Print(msg)
+		}
+
+		util.Logo(out)
+	}
 
 	prompted := false
 
@@ -84,7 +110,7 @@ func getInput() (string, string) {
 		fmt.Println()
 	}
 
-	return *artistPtr, *albumPtr
+	return *artistPtr, *albumPtr, *outputPtr
 }
 
 func getBestArtist(artist string) (bestArtist model.Artist) {
@@ -114,7 +140,7 @@ func getBestArtist(artist string) (bestArtist model.Artist) {
 		}
 
 		if index < 5 {
-			fmt.Printf("%s %3d%%\t%s\n", prefix, artist.Score, artist.DisambiguatedName())
+			out(fmt.Sprintf("%s %3d%%\t%s\n", prefix, artist.Score, artist.DisambiguatedName()))
 		} else {
 			break
 		}
@@ -174,7 +200,7 @@ func getBestReleaseGroup(album string, mbid string) (bestReleaseGroup model.Rele
 			prefix = "-->"
 		}
 
-		fmt.Printf("%s %3.0f%%\t%-*s\t%s\n", prefix, util.Distance(releaseGroup.Title, album)*100, maxTitleLength, releaseGroup.DisambiguatedTitle(), releaseGroup.Types())
+		out(fmt.Sprintf("%s %3.0f%%\t%-*s\t%s\n", prefix, util.Distance(releaseGroup.Title, album)*100, maxTitleLength, releaseGroup.DisambiguatedTitle(), releaseGroup.Types()))
 	}
 
 	return releaseGroups[0]
@@ -215,13 +241,13 @@ func getAllReleases(mbid string) (releases []model.Release) {
 	return releases
 }
 
-func getCanonicalTrackList(releases []model.Release) (canonicalTracks []model.Track) {
-	var tracks = []model.Track{}
+func getCanonicalRelease(releases []model.Release) (canonicalRelease model.Release) {
+	bestReleaseIndex := 0
 	bestScore := 0.0
 
-	for _, release := range releases {
+	for releaseIndex, release := range releases {
 		tempScore := 0.0
-		var tempTracks = []model.Track{}
+		tempTracks := 0
 
 		for mediaIndex, media := range release.Media {
 			for trackIndex, track := range media.Tracks {
@@ -243,20 +269,23 @@ func getCanonicalTrackList(releases []model.Release) (canonicalTracks []model.Tr
 
 				// todo: compare length?
 				track.Score = match / float64(len(releases))
-				tempTracks = append(tempTracks, track)
 				tempScore += track.Score
+				tempTracks++
+
+				release.Media[mediaIndex].Tracks[trackIndex] = track
 			}
 		}
 
-		releaseScore := tempScore / float64(len(tempTracks))
+		release.Score = tempScore / float64(tempTracks)
+		releases[releaseIndex] = release
 
-		if releaseScore > bestScore {
-			bestScore = releaseScore
-			tracks = tempTracks
+		if release.Score > bestScore {
+			bestScore = release.Score
+			bestReleaseIndex = releaseIndex
 		}
 	}
 
-	return tracks
+	return releases[bestReleaseIndex]
 }
 
 func filterNonCanonicalReleases(releases []model.Release, media string, tracks string) (canonicalReleases []model.Release) {
@@ -272,7 +301,7 @@ func filterNonCanonicalReleases(releases []model.Release, media string, tracks s
 
 	releases = filteredReleases
 
-	fmt.Printf("Probable canonical releases:\n\n")
+	out(fmt.Sprintf("Probable canonical releases:\n\n"))
 
 	maxLen := 0
 	for _, release := range releases {
@@ -284,7 +313,7 @@ func filterNonCanonicalReleases(releases []model.Release, media string, tracks s
 
 	for _, release := range releases {
 		date, _ := release.FuzzyDate()
-		fmt.Printf("   %s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), release.ID)
+		out(fmt.Sprintf("   %s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), release.ID))
 	}
 
 	fmt.Println()
@@ -343,7 +372,7 @@ func getCanonicalFormat(releases []model.Release) (format string, tracks string,
 
 		parts := strings.Split(kv.Key, ":")
 
-		fmt.Printf("%s %3dx\t%-*s\t%s\n", prefix, kv.Value, maxLen, parts[0], parts[1])
+		out(fmt.Sprintf("%s %3dx\t%-*s\t%s\n", prefix, kv.Value, maxLen, parts[0], parts[1]))
 	}
 
 	if inconclusive {
