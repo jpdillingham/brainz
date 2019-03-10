@@ -43,14 +43,14 @@ func main() {
 	releases := getAllReleases(bestReleaseGroup.ID)
 
 	out(fmt.Sprintf("Compiling formats..\n\n"))
-	media, tracks, err := getCanonicalFormat(releases)
+	tracks, err := getCanonicalFormat(releases)
 
 	if err != nil {
 		out(fmt.Sprintf("\nInconclusive.  Assuming the earliest release is canonical.\n\n"))
 		releases = []model.Release{releases[0]}
 	} else {
-		out(fmt.Sprintf("\nCanonical format: %s, tracks: %s\n\n", media, tracks))
-		releases = filterNonCanonicalReleases(releases, media, tracks)
+		out(fmt.Sprintf("\nCanonical tracks: %s\n\n", tracks))
+		releases = filterNonCanonicalReleases(releases, tracks)
 	}
 
 	canonicalRelease := getCanonicalRelease(releases)
@@ -64,7 +64,7 @@ func main() {
 	out(fmt.Sprintf("Probable canonical track listing:\n\n"))
 	for _, media := range canonicalRelease.Media {
 		for _, track := range media.Tracks {
-			out(fmt.Sprintf("   %3.0f%%\t%s\t%s\n", track.Score*100, track.Number, track.Title))
+			out(fmt.Sprintf("   %3.0f%%\t%s\t%s\t%s\n", track.Score*100, track.Number, track.Title, strings.Join(track.AlternateTitles, ", ")))
 		}
 	}
 
@@ -273,6 +273,8 @@ func getCanonicalRelease(releases []model.Release) (canonicalRelease model.Relea
 					otherTrack := releases[i].Media[mediaIndex].Tracks[trackIndex]
 					if otherTrack.Title == track.Title {
 						match++
+					} else {
+						track.AlternateTitles = append(track.AlternateTitles, otherTrack.Title)
 					}
 				}
 
@@ -304,13 +306,13 @@ func getCanonicalRelease(releases []model.Release) (canonicalRelease model.Relea
 	return releases[bestReleaseIndex]
 }
 
-func filterNonCanonicalReleases(releases []model.Release, media string, tracks string) (canonicalReleases []model.Release) {
+func filterNonCanonicalReleases(releases []model.Release, tracks string) (canonicalReleases []model.Release) {
 	filteredReleases := []model.Release{}
 
 	for _, release := range releases {
-		releaseMedia, releaseTracks := release.MediaInfo()
+		_, releaseTracks := release.MediaInfo()
 
-		if releaseMedia == media && releaseTracks == tracks {
+		if releaseTracks == tracks {
 			filteredReleases = append(filteredReleases, release)
 		}
 	}
@@ -337,66 +339,36 @@ func filterNonCanonicalReleases(releases []model.Release, media string, tracks s
 	return releases
 }
 
-func getCanonicalFormat(releases []model.Release) (format string, tracks string, err error) {
+func getCanonicalFormat(releases []model.Release) (tracks string, err error) {
 	mediaCounts := make(map[string]int)
+	trackCounts := make(map[string]int)
 
 	for _, release := range releases {
-		media, tracks := release.MediaInfo()
-		mediaCounts[media+":"+tracks]++
+		_, tracks := release.MediaInfo()
+		mediaCounts[tracks]++
+		trackCounts[tracks]++
 	}
 
-	// sort the map by descending number of occurances
-	type KeyValuePair struct {
-		Key   string
-		Value int
-	}
-
-	var mediaCountSlice []KeyValuePair
-
-	for k, v := range mediaCounts {
-		mediaCountSlice = append(mediaCountSlice, KeyValuePair{k, v})
-	}
-
-	sort.Slice(mediaCountSlice, func(i, j int) bool {
-		return mediaCountSlice[i].Value > mediaCountSlice[j].Value
-	})
-
-	// determine the max format string length for spacing purposes
-	// initialize to the length of "format"
-	maxLen := 6
-	for _, format := range mediaCountSlice {
-		len := len(strings.Split(format.Key, ":")[0])
-		if len > maxLen {
-			maxLen = len
-		}
-	}
-
-	// check to see if the count of the top format matches the next, indicating
-	// an inconclusive match
+	mediaSlice := util.ToSortedKeyValueSlice(mediaCounts)
 	inconclusive := false
 
-	if len(mediaCountSlice) > 1 && mediaCountSlice[0].Value == mediaCountSlice[1].Value {
+	if len(mediaSlice) > 1 && mediaSlice[0].Value == mediaSlice[1].Value {
 		inconclusive = true
 	}
 
-	for index, kv := range mediaCountSlice {
+	for index, kv := range mediaSlice {
 		prefix := "   "
 
 		if !inconclusive && index == 0 {
 			prefix = "-->"
 		}
 
-		parts := strings.Split(kv.Key, ":")
-
-		out(fmt.Sprintf("%s %3dx\t%-*s\t%s\n", prefix, kv.Value, maxLen, parts[0], parts[1]))
+		out(fmt.Sprintf("%s %3dx\t%s\n", prefix, kv.Value, kv.Key))
 	}
 
 	if inconclusive {
-		return "", "", errors.New("unable to determine canonical format")
+		return "", errors.New("unable to determine canonical format")
 	}
 
-	bestFormat := mediaCountSlice[0].Key
-	bestFormatParts := strings.Split(bestFormat, ":")
-
-	return bestFormatParts[0], bestFormatParts[1], nil
+	return mediaSlice[0].Key, nil
 }
