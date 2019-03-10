@@ -12,11 +12,11 @@ import (
 )
 
 // Logo prints the application logo to stdout.
-func Logo() {
-	fmt.Println()
-	fmt.Println("       ,. brainz")
-	fmt.Println(" (¬º-°)¬        ")
-	fmt.Println()
+func Logo(out func(string)) {
+	out(fmt.Sprintf("\n"))
+	out(fmt.Sprintf("       ,. brainz\n"))
+	out(fmt.Sprintf(" (¬º-°)¬        \n"))
+	out(fmt.Sprintf("\n"))
 }
 
 func PromptForInput(prompt string) string {
