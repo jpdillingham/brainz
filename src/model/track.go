@@ -7,5 +7,5 @@ type Track struct {
 	Title     string    `json:"title"`
 	Number    string    `json:"number"`
 	Recording Recording `json:"recording"`
-	Score     float64
+	Score     float64   `json:"score"`
 }

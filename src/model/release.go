@@ -24,6 +24,7 @@ type Release struct {
 	ID                 string             `json:"id"`
 	Media              []Media            `json:"media"`
 	Barcode            string             `json:"barcode"`
+	Score              float64            `json:"score"`
 }
 
 func (release Release) DisambiguatedTitle() string {
