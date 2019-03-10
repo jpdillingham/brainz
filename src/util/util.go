@@ -6,10 +6,28 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
+
+type KeyValuePair struct {
+	Key   string
+	Value int
+}
+
+func ToSortedKeyValueSlice(kvmap map[string]int) (slice []KeyValuePair) {
+	for k, v := range kvmap {
+		slice = append(slice, KeyValuePair{k, v})
+	}
+
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i].Value > slice[j].Value
+	})
+
+	return slice
+}
 
 // Logo prints the application logo to stdout.
 func Logo(out func(string)) {
