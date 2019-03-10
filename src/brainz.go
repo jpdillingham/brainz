@@ -85,12 +85,13 @@ func printJSON(artist string, release model.Release) {
 	for _, media := range release.Media {
 		for _, track := range media.Tracks {
 			album.Tracks = append(album.Tracks, output.Track{
-				Disc:     media.Position,
-				Position: track.Position,
-				Number:   track.Number,
-				Title:    track.Title,
-				Length:   track.Length,
-				Score:    track.Score,
+				Disc:            media.Position,
+				Position:        track.Position,
+				Number:          track.Number,
+				Title:           track.Title,
+				Length:          track.Length,
+				Score:           track.Score,
+				AlternateTitles: track.AlternateTitles,
 			})
 		}
 	}
