@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	model "./model"
+	output "./output"
 	responses "./responses"
 	util "./util"
 )
@@ -68,12 +69,27 @@ func main() {
 	}
 
 	if output == "json" {
-		printJSON(canonicalRelease)
+		printJSON(bestArtist.Name, canonicalRelease)
 	}
 }
 
-func printJSON(release model.Release) {
-	bytes, _ := json.Marshal(release)
+func printJSON(artist string, release model.Release) {
+	album := output.Album{Artist: artist, Album: release.Title, MBID: release.ID, Score: release.Score}
+
+	for _, media := range release.Media {
+		for _, track := range media.Tracks {
+			album.Tracks = append(album.Tracks, output.Track{
+				Disc:     media.Position,
+				Position: track.Position,
+				Number:   track.Number,
+				Title:    track.Title,
+				Length:   track.Length,
+				Score:    track.Score,
+			})
+		}
+	}
+
+	bytes, _ := json.Marshal(album)
 	fmt.Println(string(bytes))
 }
 
