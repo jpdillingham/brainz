@@ -39,7 +39,7 @@ func main() {
 	bestReleaseGroup := getBestReleaseGroup(album, bestArtist.ID)
 	out(fmt.Sprintf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, util.Distance(bestReleaseGroup.Title, album)*100))
 
-	out(fmt.Sprintf("Fetching releases...\n"))
+	out(fmt.Sprintf("Fetching releases...\n\n"))
 	releases := getAllReleases(bestReleaseGroup.ID)
 
 	out(fmt.Sprintf("Compiling formats..\n\n"))
@@ -49,19 +49,20 @@ func main() {
 		out(fmt.Sprintf("\nInconclusive.  Assuming the earliest release is canonical.\n\n"))
 		releases = []model.Release{releases[0]}
 	} else {
-		out(fmt.Sprintf("\nCanonical tracks: %s\n\n", tracks))
+		out(fmt.Sprintf("\nCanonical tracks count(s): %s\n\n", tracks))
 		releases = filterNonCanonicalReleases(releases, tracks)
 	}
 
 	canonicalRelease := getCanonicalRelease(releases)
+	canonicalReleaseFormat, _ := canonicalRelease.MediaInfo()
 	canonicalReleaseDate, _ := canonicalRelease.FuzzyDate()
-	out(fmt.Sprintf("Probable canonical release: %s (%s, %s) (Score: %.0f%%)\n",
+	out(fmt.Sprintf("Probable canonical release: %s (%s, %s, %s) (Score: %.0f%%):\n\n",
 		canonicalRelease.DisambiguatedTitle(),
-		canonicalRelease.ID,
 		canonicalReleaseDate.Format("2006-01-02"),
+		canonicalReleaseFormat,
+		canonicalRelease.ID,
 		canonicalRelease.Score*100))
 
-	out(fmt.Sprintf("Probable canonical track listing:\n\n"))
 	for _, media := range canonicalRelease.Media {
 		for _, track := range media.Tracks {
 			out(fmt.Sprintf("   %3.0f%%\t%s\t%s\t%s\n", track.Score*100, track.Number, track.Title, strings.Join(track.AlternateTitles, ", ")))
@@ -330,8 +331,9 @@ func filterNonCanonicalReleases(releases []model.Release, tracks string) (canoni
 	}
 
 	for _, release := range releases {
+		format, _ := release.MediaInfo()
 		date, _ := release.FuzzyDate()
-		out(fmt.Sprintf("   %s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), release.ID))
+		out(fmt.Sprintf("   %s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), format))
 	}
 
 	fmt.Println()
@@ -349,14 +351,14 @@ func getCanonicalFormat(releases []model.Release) (tracks string, err error) {
 		trackCounts[tracks]++
 	}
 
-	mediaSlice := util.ToSortedKeyValueSlice(mediaCounts)
+	slice := util.ToSortedKeyValueSlice(trackCounts)
 	inconclusive := false
 
-	if len(mediaSlice) > 1 && mediaSlice[0].Value == mediaSlice[1].Value {
+	if len(slice) > 1 && slice[0].Value == slice[1].Value {
 		inconclusive = true
 	}
 
-	for index, kv := range mediaSlice {
+	for index, kv := range slice {
 		prefix := "   "
 
 		if !inconclusive && index == 0 {
@@ -370,5 +372,5 @@ func getCanonicalFormat(releases []model.Release) (tracks string, err error) {
 		return "", errors.New("unable to determine canonical format")
 	}
 
-	return mediaSlice[0].Key, nil
+	return slice[0].Key, nil
 }
