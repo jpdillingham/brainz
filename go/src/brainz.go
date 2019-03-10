@@ -38,12 +38,12 @@ func main() {
 
 	fmt.Printf("\nBest release group: %s (%s) (Score: %.0f%%)\n\n", bestReleaseGroup.Title, bestReleaseGroup.ID, util.Distance(bestReleaseGroup.Title, album)*100)
 
-	getCanonicalTrackList(bestReleaseGroup.ID)
+	trackList := getCanonicalTrackList(bestReleaseGroup.ID)
 
 	// todo: final output
-	// for _, track := range trackList {
-	// 	//fmt.Printf("%s. %s\n", track.Number, track.Title)
-	// }
+	for _, track := range trackList {
+		fmt.Printf("   %3.0f%%\t%s\t%s\n", track.Score*100, track.Number, track.Title)
+	}
 }
 
 func getInput() (string, string) {
@@ -201,32 +201,42 @@ func getCanonicalTrackList(mbid string) (canonicalTracks []model.Track) {
 	fmt.Printf("\nProbable canonical track listing:\n\n")
 
 	var tracks = []model.Track{}
+	bestScore := 0.0
 
-	for mediaIndex, media := range releases[0].Media {
-		for trackIndex, track := range media.Tracks {
-			match := 1.0
+	for _, release := range releases {
+		tempScore := 0.0
+		var tempTracks = []model.Track{}
 
-			for i := range releases {
-				if i > 0 {
+		for mediaIndex, media := range release.Media {
+			for trackIndex, track := range media.Tracks {
+				match := 0.0
+
+				for i := range releases {
 					otherTrack := releases[i].Media[mediaIndex].Tracks[trackIndex]
 					if otherTrack.Title == track.Title {
 						match++
 					}
 				}
+
+				// fix the track number for multidisc albums
+				if len(releases[0].Media) > 1 {
+					track.Number = fmt.Sprintf("%d%02d", media.Position, track.Position)
+				} else {
+					track.Number = fmt.Sprintf("%02d", track.Position)
+				}
+
+				// todo: compare length?
+				track.Score = match / float64(len(releases))
+				tempTracks = append(tempTracks, track)
+				tempScore += track.Score
 			}
+		}
 
-			// fix the track number for multidisc albums
-			if len(releases[0].Media) > 1 {
-				track.Number = fmt.Sprintf("%d%02d", media.Position, track.Position)
-			} else {
-				track.Number = fmt.Sprintf("%02d", track.Position)
-			}
+		releaseScore := tempScore / float64(len(tempTracks))
 
-			// todo: if the match percentage is poor, check among the other releases for a track with more consensus
-			// todo: compare length?
-
-			fmt.Printf("   %3.0f%% \t%s\t%s\n", match/float64(len(releases))*100, track.Number, track.Title)
-			tracks = append(tracks, track)
+		if releaseScore > bestScore {
+			bestScore = releaseScore
+			tracks = tempTracks
 		}
 	}
 
