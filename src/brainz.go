@@ -70,7 +70,7 @@ func main() {
 
 	for _, media := range canonicalRelease.Media {
 		for _, track := range media.Tracks {
-			out(fmt.Sprintf("   %s\t%-*s\t%3.0f%%\t%s\n", track.Number, maxLen, track.Title, track.Score*100, strings.Join(track.AlternateTitles, ", ")))
+			out(fmt.Sprintf("    %s\t%-*s\t%3.0f%%\t%s\n", track.Number, maxLen, track.Title, track.Score*100, strings.Join(track.AlternateTitles, ", ")))
 		}
 	}
 
@@ -349,7 +349,7 @@ func filterNonCanonicalReleases(releases []model.Release, tracks string) (canoni
 	for _, release := range releases {
 		format, _ := release.MediaInfo()
 		date, _ := release.FuzzyDate()
-		out(fmt.Sprintf("   %s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), format))
+		out(fmt.Sprintf("    %s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), format))
 	}
 
 	fmt.Println()
