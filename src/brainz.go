@@ -42,21 +42,21 @@ func main() {
 	out(fmt.Sprintf("Fetching releases...\n\n"))
 	releases := getAllReleases(bestReleaseGroup.ID)
 
-	out(fmt.Sprintf("Compiling formats..\n\n"))
+	out(fmt.Sprintf("%d releases fetched. Computing canonical track count...\n\n", len(releases)))
 	tracks, err := getCanonicalFormat(releases)
 
 	if err != nil {
 		out(fmt.Sprintf("\nInconclusive.  Assuming the earliest release is canonical.\n\n"))
 		releases = []model.Release{releases[0]}
 	} else {
-		out(fmt.Sprintf("\nCanonical tracks count(s): %s\n\n", tracks))
+		out(fmt.Sprintf("\nCanonical track count(s): %s\n\n", tracks))
 		releases = filterNonCanonicalReleases(releases, tracks)
 	}
 
 	canonicalRelease := getCanonicalRelease(releases)
 	canonicalReleaseFormat, _ := canonicalRelease.MediaInfo()
 	canonicalReleaseDate, _ := canonicalRelease.FuzzyDate()
-	out(fmt.Sprintf("Probable canonical release: %s (%s, %s, %s) (Score: %.0f%%):\n\n", canonicalRelease.DisambiguatedTitle(), canonicalReleaseDate.Format("2006-01-02"), canonicalReleaseFormat, canonicalRelease.ID, canonicalRelease.Score*100))
+	out(fmt.Sprintf("Best probable canonical release: %s (%s, %s, %s) (Score: %.0f%%):\n\n", canonicalRelease.DisambiguatedTitle(), canonicalReleaseDate.Format("2006-01-02"), canonicalReleaseFormat, canonicalRelease.ID, canonicalRelease.Score*100))
 
 	maxLen := 0
 	for _, media := range canonicalRelease.Media {
@@ -278,13 +278,13 @@ func getCanonicalRelease(releases []model.Release) (canonicalRelease model.Relea
 
 				for i := range releases {
 					otherTrack := releases[i].Media[mediaIndex].Tracks[trackIndex]
-					if strings.ToLower(otherTrack.Title) == strings.ToLower(track.Title) {
+					if otherTrack.Title == track.Title {
 						match++
 					} else {
 						// prevent adding it if it's already added
 						exists := false
 						for _, alt := range track.AlternateTitles {
-							if strings.ToLower(alt) == strings.ToLower(otherTrack.Title) {
+							if alt == otherTrack.Title {
 								exists = true
 							}
 						}
