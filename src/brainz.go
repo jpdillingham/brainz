@@ -101,7 +101,7 @@ func printJSON(artist model.Artist, release model.Release) {
 	a.Albums = append(a.Albums, album)
 
 	bytes, _ := json.Marshal(a)
-	fmt.Println(string(bytes))
+	fmt.Print(string(bytes))
 }
 
 func setup() (artist string, album string, output string) {
@@ -356,7 +356,7 @@ func filterNonCanonicalReleases(releases []model.Release, tracks string) (canoni
 		out(fmt.Sprintf("%s\t%-*s\t%s\n", date.Format("2006-01-02"), maxLen, release.DisambiguatedTitle(), format))
 	}
 
-	fmt.Println()
+	out(fmt.Sprintf(""))
 
 	return releases
 }
