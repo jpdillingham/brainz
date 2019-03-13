@@ -75,12 +75,13 @@ func main() {
 	}
 
 	if output == "json" {
-		printJSON(bestArtist.Name, canonicalRelease)
+		printJSON(bestArtist, canonicalRelease)
 	}
 }
 
-func printJSON(artist string, release model.Release) {
-	album := output.Album{Artist: artist, Album: release.Title, MBID: release.ID, Score: release.Score}
+func printJSON(artist model.Artist, release model.Release) {
+	a := output.Artist{Artist: artist.Name, MBID: artist.ID, Score: artist.Score}
+	album := output.Album{Title: release.Title, MBID: release.ID, Score: release.Score}
 
 	for _, media := range release.Media {
 		for _, track := range media.Tracks {
@@ -89,6 +90,7 @@ func printJSON(artist string, release model.Release) {
 				Position:        track.Position,
 				Number:          track.Number,
 				Title:           track.Title,
+				MBID:            track.ID,
 				Length:          track.Length,
 				Score:           track.Score,
 				AlternateTitles: track.AlternateTitles,
@@ -96,7 +98,9 @@ func printJSON(artist string, release model.Release) {
 		}
 	}
 
-	bytes, _ := json.Marshal(album)
+	a.Albums = append(a.Albums, album)
+
+	bytes, _ := json.Marshal(a)
 	fmt.Println(string(bytes))
 }
 
